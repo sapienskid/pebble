@@ -7,7 +7,6 @@
   import { v4 as uuidv4 } from 'uuid';
   import { notesStore } from '$lib/stores/notes';
   import { HelpCircle, Wifi, Lightbulb } from '@lucide/svelte';
-  import FinalEditNoteDialog from './FinalEditNoteDialog.svelte';
 
   export let open: boolean = false;
 
@@ -32,11 +31,6 @@
     selectedTag = selectedTag === tag ? null : tag;
   }
 
-  function proceedToFinalEdit() {
-    if (isValid) {
-      showFinalEdit = true;
-    }
-  }
 
   function handleFinalConfirm(finalContent: string, finalTag: string | null) {
     const defaultTag = 'thoughts';
@@ -98,17 +92,10 @@
       <DialogClose>
         <Button variant="outline" class="px-6">Cancel</Button>
       </DialogClose>
-      <Button onclick={proceedToFinalEdit} disabled={!isValid} class="px-6">
-        Next
+      <Button onclick={()=> handleFinalConfirm(content,selectedTag)} disabled={!isValid} class="px-6">
+        Create
       </Button>
     </DialogFooter>
   </DialogContent>
 </Dialog>
 
-<FinalEditNoteDialog
-  bind:open={showFinalEdit}
-  initialContent={content}
-  initialTag={selectedTag}
-  onConfirm={handleFinalConfirm}
-  onCancel={handleFinalCancel}
-/>

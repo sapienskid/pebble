@@ -2,13 +2,11 @@ import { writable, get } from 'svelte/store';
 // Check if we're in a browser environment
 const isBrowser = typeof window !== 'undefined' && typeof window.indexedDB !== 'undefined';
 import { db, type Settings } from '../db';
-import { requestNotificationPermission } from '../services/notification';
 
 const defaultSettings: Settings = {
   id: 'settings',
   syncEnabled: false,
   autoSyncOnStart: false,
-  notificationMethod: 'browser'
 };
 
 function createSettingsStore() {
@@ -43,18 +41,6 @@ function createSettingsStore() {
     update: async (updater: (settings: Settings) => Settings) => {
       const currentSettings = currentValue;
       const newSettings = updater(currentSettings);
-
-      // Handle notification method change
-      if (newSettings.notificationMethod !== currentSettings.notificationMethod) {
-        if (newSettings.notificationMethod === 'browser') {
-          const granted = await requestNotificationPermission();
-          if (!granted) {
-            // Permission denied, fallback to ntfy
-            newSettings.notificationMethod = 'ntfy';
-            console.warn('Notification permission denied, falling back to ntfy');
-          }
-        }
-      }
 
       // Save to IndexedDB (only in browser)
       if (isBrowser) {
