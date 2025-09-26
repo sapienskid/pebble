@@ -1,6 +1,5 @@
 import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { verifyApiKey } from '$lib/auth';
 
 export const POST: RequestHandler = async ({ platform, request }) => {
 	if (!platform) {
@@ -15,14 +14,6 @@ export const POST: RequestHandler = async ({ platform, request }) => {
 	}
 
 	try {
-		// Verify authentication
-		const authHeader = request.headers.get('authorization');
-		if (!authHeader || !authHeader.startsWith('Bearer ')) {
-			throw error(401, 'Missing or invalid authorization header');
-		}
-		const token = authHeader.slice(7);
-		await verifyApiKey(token, kv, masterSecret);
-
 		// Parse request body
 		const body: { type: string; markdown: string; id?: string; createdAt?: string } = await request.json();
 

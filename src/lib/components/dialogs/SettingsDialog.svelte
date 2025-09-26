@@ -1,11 +1,9 @@
 <script lang="ts">
   import { themeStore } from '$lib/stores/theme';
   import { settingsStore } from '$lib/stores/settings';
-  import { db, type ApiKey } from '$lib/db';
   import { Button } from '$lib/components/ui/button';
   import { Label } from '$lib/components/ui/label';
   import { Switch } from '$lib/components/ui/switch';
-  import { Input } from '$lib/components/ui/input';
   import { Separator } from '$lib/components/ui/separator';
   import {
     Dialog,
@@ -17,8 +15,7 @@
     DialogTrigger,
     DialogClose
   } from '$lib/components/ui/dialog';
-  import DeleteWarningDialog from './DeleteWarningDialog.svelte';
-  import { X, Copy, Trash2, Plus } from '@lucide/svelte';
+  import { X } from '@lucide/svelte';
   import { requestNotificationPermission } from '$lib/services/notification';
 
   export let open = false;
@@ -26,7 +23,6 @@
   let currentTheme: 'light' | 'dark' | 'device';
   let settings: {
     syncEnabled: boolean;
-    syncToken?: string;
     autoSyncOnStart: boolean;
     notificationMethod: 'browser' | 'ntfy';
   } = {
@@ -35,22 +31,11 @@
     notificationMethod: 'browser'
   };
 
-  let apiKeys: { keyId: string; name: string; createdAt: string; lastUsedAt: string | null; revoked: boolean }[] = [];
-  let loadingKeys = false;
-  let creatingKey = false;
-  let revokingKeys = new Set<string>();
-
-  let deleteDialogOpen = false;
-  let apiKeyToDelete: string | null = null;
-  let newlyCreatedKey: string | null = null;
-  let copied = false;
   let notificationPermission: NotificationPermission = 'default';
 
   // Subscribe to stores
   themeStore.subscribe(value => currentTheme = value);
   settingsStore.subscribe(value => settings = { ...value }); // Ensure it's a copy to avoid mutation issues
-
-  $: if (open && !loadingKeys) loadApiKeysFromDB();
 
   // Initialize notification permission
   if (typeof Notification !== 'undefined') {
@@ -72,171 +57,6 @@
     themeStore.set(currentTheme);
     settingsStore.update(() => ({ ...settings, id: 'settings' }));
     open = false;
-  }
-
-  function addApiKey() {
-    createApiKey();
-  }
-
-  async function copyToClipboard(text: string) {
-    try {
-      await navigator.clipboard.writeText(text);
-      copied = true;
-      setTimeout(() => copied = false, 2000); // Reset after 2 seconds
-      // Could add a toast notification here if available
-    } catch (err) {
-      console.error('Failed to copy: ', err);
-    }
-  }
-
-  function dismissNewKey() {
-    newlyCreatedKey = null;
-    copied = false;
-  }
-
-  function maskApiKey(key: string): string {
-    // Show first 8 characters and last 4 characters, mask the rest
-    if (key.length <= 12) return '••••••••••••';
-    return key.substring(0, 8) + '••••••••' + key.substring(key.length - 4);
-  }
-
-  function confirmDeleteApiKey(keyId: string) {
-    apiKeyToDelete = keyId;
-    deleteDialogOpen = true;
-  }
-
-  function deleteApiKey() {
-    if (apiKeyToDelete) {
-      revokeApiKey(apiKeyToDelete);
-      apiKeyToDelete = null;
-      deleteDialogOpen = false;
-    }
-  }
-
-  async function loadApiKeysFromDB() {
-    loadingKeys = true;
-    try {
-      const keys = await db.apiKeys.toArray();
-      apiKeys = keys.map(k => ({
-        keyId: k.id,
-        name: k.name,
-        createdAt: k.createdAt,
-        lastUsedAt: k.lastUsedAt || null,
-        revoked: k.revoked
-      }));
-    } catch (error) {
-      console.error('Error loading API keys from DB:', error);
-    } finally {
-      loadingKeys = false;
-    }
-  }
-
-  async function fetchApiKeys() {
-    // This can be called to sync with server if needed
-    loadingKeys = true;
-    try {
-      const response = await fetch('/api/keys/list');
-      if (response.ok) {
-        const data: { keys: any[] } = await response.json();
-        // Update local DB with server data
-        for (const serverKey of data.keys) {
-          const localKey = await db.apiKeys.get(serverKey.keyId);
-          if (!localKey || localKey.synced === false) {
-            // Update local with server data
-            await db.apiKeys.put({
-              id: serverKey.keyId,
-              tokenSecret: '', // We don't have it from server
-              createdAt: serverKey.createdAt,
-              revoked: serverKey.revoked,
-              synced: true,
-              name: serverKey.name,
-              lastUsedAt: serverKey.lastUsedAt
-            });
-          }
-        }
-        await loadApiKeysFromDB(); // Refresh from updated DB
-      } else {
-        console.error('Failed to fetch API keys from server');
-      }
-    } catch (error) {
-      console.error('Error fetching API keys:', error);
-    } finally {
-      loadingKeys = false;
-    }
-  }
-
-  async function createApiKey() {
-    creatingKey = true;
-    try {
-      // Generate locally
-      const keyId = crypto.randomUUID();
-      const tokenSecret = crypto.randomUUID();
-      const token = `${keyId}.${tokenSecret}`;
-
-      const apiKey: ApiKey = {
-        id: keyId,
-        tokenSecret,
-        createdAt: new Date().toISOString(),
-        revoked: false,
-        synced: false,
-        name: `Key ${keyId.slice(0, 8)}`
-      };
-
-      // Store locally immediately
-      await db.apiKeys.put(apiKey);
-
-      // Display the token for copying
-      newlyCreatedKey = token;
-
-      // Refresh local list
-      await loadApiKeysFromDB();
-    } catch (error) {
-      console.error('Error creating API key:', error);
-    } finally {
-      creatingKey = false;
-    }
-  }
-
-  async function revokeApiKey(keyId: string) {
-    revokingKeys.add(keyId);
-    try {
-      // Mark as revoked locally first
-      const key = await db.apiKeys.get(keyId);
-      if (key) {
-        key.revoked = true;
-        key.synced = false; // Mark for sync
-        await db.apiKeys.put(key);
-      }
-
-      // If this was the current sync token, clear it
-      if (settings.syncToken && settings.syncToken.startsWith(keyId + '.')) {
-        settingsStore.update(s => ({ ...s, syncToken: undefined }));
-      }
-
-      await loadApiKeysFromDB(); // Refresh local list
-
-      // Try to sync revocation to server (don't block on failure)
-      try {
-        const response = await fetch('/api/keys/revoke', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ keyId })
-        });
-        if (response.ok) {
-          // Mark as synced
-          if (key) {
-            key.synced = true;
-            await db.apiKeys.put(key);
-          }
-        }
-      } catch (syncError) {
-        console.warn('Failed to sync key revocation to server:', syncError);
-      }
-    } catch (error) {
-      console.error('Error revoking API key:', error);
-    } finally {
-      revokingKeys.delete(keyId);
-    }
   }
 </script>
 
@@ -289,52 +109,6 @@
         <div class="flex items-center space-x-2">
           <Switch bind:checked={settings.syncEnabled} on:change={(e) => settingsStore.update(s => ({...s, syncEnabled: e.detail}))} ariaLabel="Enable background sync" />
           <Label>Enable background sync</Label>
-        </div>
-        <div class="space-y-2">
-          <Label>Sync Token</Label>
-          <Input bind:value={settings.syncToken} placeholder="Paste your API token here" class="font-mono text-sm" />
-          <p class="text-xs text-muted-foreground">
-            Enter the API token from the Obsidian plugin or copy from newly created keys above.
-          </p>
-        </div>
-        <div class="space-y-2">
-          <Label>API Keys (for Obsidian plugin)</Label>
-          
-          {#if newlyCreatedKey}
-            <div class="p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-md">
-              <div class="flex items-center justify-between mb-2">
-                <span class="text-sm font-medium text-green-800 dark:text-green-200">New API Key Created</span>
-                <Button onclick={dismissNewKey} size="sm" variant="ghost">
-                  <X class="w-4 h-4" />
-                </Button>
-              </div>
-              <div class="flex gap-2">
-                <Input value={newlyCreatedKey} readonly class="flex-1 font-mono text-sm" />
-                <Button onclick={() => { copyToClipboard(newlyCreatedKey!); settings.syncToken = newlyCreatedKey ?? undefined; }} size="sm" disabled={copied}>
-                  <Copy class="w-4 h-4 mr-1" />
-                  {copied ? 'Copied & Set' : 'Copy & Set as Sync Token'}
-                </Button>
-              </div>
-              <p class="text-xs text-green-600 dark:text-green-400 mt-1">
-                Copy this key now - it won't be shown again for security reasons.
-              </p>
-            </div>
-          {/if}
-          
-          <div class="space-y-2">
-            {#each apiKeys.filter(k => !k.revoked) as key (key.keyId)}
-              <div class="flex gap-2 items-center">
-                <Input value={maskApiKey(key.keyId)} readonly class="flex-1 font-mono" />
-                <Button onclick={() => confirmDeleteApiKey(key.keyId)} size="sm" variant="destructive" disabled={revokingKeys.has(key.keyId)}>
-                  <Trash2 class="w-4 h-4" />
-                </Button>
-              </div>
-            {/each}
-            <Button onclick={addApiKey} size="sm" variant="outline" disabled={creatingKey}>
-              <Plus class="w-4 h-4 mr-2" />
-              {creatingKey ? 'Creating...' : 'Add API Key'}
-            </Button>
-          </div>
         </div>
         <div class="flex items-center space-x-2">
           <Switch bind:checked={settings.autoSyncOnStart} on:change={(e) => settingsStore.update(s => ({...s, autoSyncOnStart: e.detail}))} ariaLabel="Auto-sync on app start" />
@@ -411,10 +185,3 @@
     </DialogFooter>
   </DialogContent>
 </Dialog>
-
-<DeleteWarningDialog
-  bind:open={deleteDialogOpen}
-  onOpenChange={(open) => deleteDialogOpen = open}
-  onConfirm={deleteApiKey}
-  title="API Key"
-/>
