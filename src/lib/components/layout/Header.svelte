@@ -2,9 +2,22 @@
   import { Button } from "$lib/components/ui/button";
   import Icon from '@iconify/svelte';
   import SettingsDialog from '$lib/components/dialogs/SettingsDialog.svelte';
-  export let title = '';
+  import { onMount } from 'svelte';
 
-  let settingsOpen = false;
+  let { title = '' } = $props();
+
+  let settingsOpen = $state(false);
+  let isOnline = $state(navigator.onLine);
+
+  onMount(() => {
+    const updateOnline = () => isOnline = navigator.onLine;
+    window.addEventListener('online', updateOnline);
+    window.addEventListener('offline', updateOnline);
+    return () => {
+      window.removeEventListener('online', updateOnline);
+      window.removeEventListener('offline', updateOnline);
+    };
+  });
 </script>
 
 <header class="sticky top-0 bg-background flex items-center justify-between p-4">
@@ -13,6 +26,7 @@
       <Icon icon="streamline-freehand:notes-paper" class="w-4 h-4 text-primary" />
     </div>
     <div class="text-lg font-semibold">{title}</div>
+    <div class="w-2 h-2 rounded-full {isOnline ? 'bg-green-500' : 'bg-red-500'}"></div>
   </div>
   <div class="flex items-center gap-2">
     <Button variant="outline" size="icon" aria-label="Sync">
