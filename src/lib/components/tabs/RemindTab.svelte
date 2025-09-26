@@ -110,7 +110,7 @@
     aria-label="Add reminder"
     style="translate: 0 0;"
   >
-    <Plus class="w-4 h-6" />
+    <Plus class="w-6 h-6" />
   </button>
 
   </div>

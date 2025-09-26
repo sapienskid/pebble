@@ -25,15 +25,17 @@
   let currentTheme: 'light' | 'dark' | 'device';
   let settings: {
     syncEnabled: boolean;
-    apiKeys: string[];
+    syncToken?: string;
     autoSyncOnStart: boolean;
     notificationMethod: 'browser' | 'ntfy';
   } = {
     syncEnabled: false,
-    apiKeys: [],
     autoSyncOnStart: false,
     notificationMethod: 'browser'
   };
+
+  let apiKeys: { keyId: string; name: string; createdAt: string; lastUsedAt: string | null; revoked: boolean }[] = [];
+  let loadingKeys = false;
 
   let deleteDialogOpen = false;
   let apiKeyToDelete: string | null = null;
@@ -44,6 +46,8 @@
   // Subscribe to stores
   themeStore.subscribe(value => currentTheme = value);
   settingsStore.subscribe(value => settings = { ...value }); // Ensure it's a copy to avoid mutation issues
+
+  $: if (open && !loadingKeys) fetchApiKeys();
 
   // Initialize notification permission
   if (typeof Notification !== 'undefined') {
@@ -68,9 +72,7 @@
   }
 
   function addApiKey() {
-    const newKey = crypto.randomUUID();
-    settings.apiKeys = [...settings.apiKeys, newKey];
-    newlyCreatedKey = newKey;
+    createApiKey();
   }
 
   async function copyToClipboard(text: string) {
@@ -95,16 +97,65 @@
     return key.substring(0, 8) + '••••••••' + key.substring(key.length - 4);
   }
 
-  function confirmDeleteApiKey(key: string) {
-    apiKeyToDelete = key;
+  function confirmDeleteApiKey(keyId: string) {
+    apiKeyToDelete = keyId;
     deleteDialogOpen = true;
   }
 
   function deleteApiKey() {
     if (apiKeyToDelete) {
-      settings.apiKeys = settings.apiKeys.filter(key => key !== apiKeyToDelete);
+      revokeApiKey(apiKeyToDelete);
       apiKeyToDelete = null;
       deleteDialogOpen = false;
+    }
+  }
+
+  async function fetchApiKeys() {
+    loadingKeys = true;
+    try {
+      const response = await fetch('/api/keys/list');
+      if (response.ok) {
+        const data: { keys: any[] } = await response.json();
+        apiKeys = data.keys;
+      } else {
+        console.error('Failed to fetch API keys');
+      }
+    } catch (error) {
+      console.error('Error fetching API keys:', error);
+    } finally {
+      loadingKeys = false;
+    }
+  }
+
+  async function createApiKey() {
+    try {
+      const response = await fetch('/api/keys/create', { method: 'POST' });
+      if (response.ok) {
+        const data: { token: string } = await response.json();
+        newlyCreatedKey = data.token;
+        await fetchApiKeys(); // Refresh the list
+      } else {
+        console.error('Failed to create API key');
+      }
+    } catch (error) {
+      console.error('Error creating API key:', error);
+    }
+  }
+
+  async function revokeApiKey(keyId: string) {
+    try {
+      const response = await fetch('/api/keys/revoke', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ keyId })
+      });
+      if (response.ok) {
+        await fetchApiKeys(); // Refresh the list
+      } else {
+        console.error('Failed to revoke API key');
+      }
+    } catch (error) {
+      console.error('Error revoking API key:', error);
     }
   }
 </script>
@@ -159,6 +210,15 @@
           <Switch bind:checked={settings.syncEnabled} on:change={(e) => settingsStore.update(s => ({...s, syncEnabled: e.detail}))} ariaLabel="Enable background sync" />
           <Label>Enable background sync</Label>
         </div>
+        {#if settings.syncEnabled}
+          <div class="space-y-2">
+            <Label>Sync API Token</Label>
+            <Input bind:value={settings.syncToken} placeholder="Paste your API token here" type="password" />
+            <p class="text-xs text-muted-foreground">
+              Generate an API key above and paste the token here for sync.
+            </p>
+          </div>
+        {/if}
         <div class="space-y-2">
           <Label>API Keys (for Obsidian plugin)</Label>
           
@@ -184,15 +244,19 @@
           {/if}
           
           <div class="space-y-1">
-            {#each settings.apiKeys as key (key)}
-              <div class="flex gap-2 items-center">
-                <Input value={maskApiKey(key)} readonly class="flex-1 font-mono h-8" />
-                <Button onclick={() => confirmDeleteApiKey(key)} size="sm" variant="destructive" class="h-8 w-8 p-0">
-                  <Trash2 class="w-3 h-3" />
-                </Button>
-              </div>
-            {/each}
-            <Button onclick={addApiKey} size="sm" variant="outline" class="h-8">
+            {#if loadingKeys}
+              <p class="text-xs text-muted-foreground">Loading API keys...</p>
+            {:else}
+              {#each apiKeys.filter(k => !k.revoked) as key (key.keyId)}
+                <div class="flex gap-2 items-center">
+                  <Input value={key.name} readonly class="flex-1 h-8" />
+                  <Button onclick={() => confirmDeleteApiKey(key.keyId)} size="sm" variant="destructive" class="h-8 w-8 p-0">
+                    <Trash2 class="w-3 h-3" />
+                  </Button>
+                </div>
+              {/each}
+            {/if}
+            <Button onclick={addApiKey} size="sm" variant="outline" class="h-8" disabled={loadingKeys}>
               <Plus class="w-3 h-3 mr-2" />
               <span class="text-xs">Add API Key</span>
             </Button>

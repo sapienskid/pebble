@@ -7,7 +7,6 @@ import { requestNotificationPermission } from '../services/notification';
 const defaultSettings: Settings = {
   id: 'settings',
   syncEnabled: false,
-  apiKeys: [],
   autoSyncOnStart: false,
   notificationMethod: 'browser'
 };
