@@ -8,6 +8,7 @@ export interface ThemeRecord {
 export interface Settings {
   id: string; // probably just one record with id 'settings'
   syncEnabled: boolean;
+  syncToken?: string;
   autoSyncOnStart: boolean;
   notificationMethod: 'browser' | 'ntfy';
 }

@@ -9,3 +9,7 @@ id = "c9e4765973954b6e9a5458d1a8d531e7"
 [assets]
 directory = ".svelte-kit/cloudflare/assets"
 binding = "ASSETS"
+
+# wrangler.toml (wrangler v3.88.0^)
+[observability.logs]
+enabled = true

@@ -18,10 +18,14 @@ export const GET: RequestHandler = async ({ platform, request, url }) => {
 		// Verify authentication token
 		const authHeader = request.headers.get('authorization');
 		if (!authHeader || !authHeader.startsWith('Bearer ')) {
-			throw error(401, 'Missing or invalid authorization header');
+			return json({ message: 'Missing or invalid authorization header' }, { status: 401 });
 		}
 		const token = authHeader.slice(7);
-		await verifyApiKey(token, kv, masterSecret);
+		try {
+			await verifyApiKey(token, kv, masterSecret);
+		} catch (authErr) {
+			return json({ message: 'Invalid API key' }, { status: 401 });
+		}
 
 		// Fetch all sync items
 		const list = await kv.list({ prefix: 'sync:' });
@@ -40,6 +44,6 @@ export const GET: RequestHandler = async ({ platform, request, url }) => {
 		return json({ items: syncItems });
 	} catch (err) {
 		console.error('Error fetching sync items:', err);
-		throw error(500, 'Failed to fetch sync items');
+		return json({ message: (err as any).message || 'Failed to fetch sync items' }, { status: 500 });
 	}
 };

@@ -14,15 +14,18 @@ export const GET: RequestHandler = async ({ platform, request, url }) => {
 		throw error(500, 'KV or master secret not configured');
 	}
 
-	try {
-		// Verify authentication
-		const authHeader = request.headers.get('authorization');
-		if (!authHeader || !authHeader.startsWith('Bearer ')) {
-			throw error(401, 'Missing or invalid authorization header');
-		}
-		const token = authHeader.slice(7);
-		await verifyApiKey(token, kv, masterSecret);
+	// Verify authentication
+	const authHeader = request.headers.get('authorization');
+	if (!authHeader || !authHeader.startsWith('Bearer ')) {
+		return json({ error: 'Missing or invalid authorization header' }, { status: 401 });
+	}
+	const token = authHeader.slice(7);
+	const authResult = await verifyApiKey(token, kv, masterSecret);
+	if (!authResult) {
+		return json({ error: 'Invalid API key' }, { status: 401 });
+	}
 
+	try {
 		// Parse query params
 		const limit = Math.min(parseInt(url.searchParams.get('limit') || '10'), 100);
 		const cursor = url.searchParams.get('cursor');
