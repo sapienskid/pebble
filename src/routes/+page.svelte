@@ -2,8 +2,6 @@
 	import { onMount } from 'svelte';
 	import { get } from 'svelte/store';
 	import CaptureTab from "$lib/components/tabs/CaptureTab.svelte";
-	import PlanTab from "$lib/components/tabs/PlanTab.svelte";
-	import RemindTab from "$lib/components/tabs/RemindTab.svelte";
 	import TabNavigation from "$lib/components/layout/TabNavigation.svelte";
 	import Header from "$lib/components/layout/Header.svelte";
 	import { settingsStore } from '$lib/stores/settings';
@@ -14,6 +12,7 @@
 	function select(tab: "capture" | "plan" | "remind") {
 		active = tab;
 	}
+
 
 	onMount(() => {
 		const settings = get(settingsStore);
@@ -29,10 +28,6 @@
 		<Header />
 		{#if active === "capture"}
 			<CaptureTab />
-		{:else if active === "plan"}
-			<PlanTab />
-		{:else}
-			<RemindTab />
 		{/if}
 	</div>
 	<TabNavigation {active} {select} />

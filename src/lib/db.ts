@@ -10,7 +10,6 @@ export interface Settings {
   syncEnabled: boolean;
   syncToken?: string;
   autoSyncOnStart: boolean;
-  notificationMethod: 'browser' | 'ntfy';
 }
 
 // Note interface
@@ -22,40 +21,11 @@ export interface Note {
   synced: boolean;
 }
 
-// Task interface
-export interface Task {
-  id: string;
-  type: 'task';
-  title: string;
-  description?: string;
-  date: string; // ISO date string, e.g., '2025-09-25'
-  timeSlot: 'morning' | 'afternoon' | 'evening';
-  scheduledTime?: string; // "9:30 AM"
-  completed: boolean;
-  synced: boolean;
-}
 
-// Reminder interface
-export interface Reminder {
-  id: string;
-  timestamp: string; // ISO 8601
-  synced: boolean;
-  createdAt: string;
-  updatedAt: string;
-  type: 'reminder';
-  title: string;
-  description?: string;
-  scheduledFor: string; // ISO 8601
-  reminderType: 'one-time' | 'recurring';
-  recurring?: 'daily' | 'weekly' | 'monthly';
-  completed: boolean;
-  notified: boolean;
-}
+
 
 class PebbleDB extends Dexie {
   notes!: Table<Note>;
-  tasks!: Table<Task>;
-  reminders!: Table<Reminder>;
   settings!: Table<Settings>;
   theme!: Table<ThemeRecord>;
 
@@ -63,8 +33,6 @@ class PebbleDB extends Dexie {
     super('PebbleDB');
     this.version(1).stores({
       notes: 'id, timestamp, synced, tags',
-      tasks: 'id, timestamp, synced, type, timeSlot, completed',
-      reminders: 'id, timestamp, synced, type, scheduledFor, reminderType',
       settings: 'id',
       theme: 'id'
     });
@@ -103,8 +71,6 @@ class MockTable<T extends { id: string }> {
 
 class MockDB {
   notes = new MockTable<Note>();
-  tasks = new MockTable<Task>();
-  reminders = new MockTable<Reminder>();
   settings = new MockTable<Settings>();
   theme = new MockTable<ThemeRecord>();
 }

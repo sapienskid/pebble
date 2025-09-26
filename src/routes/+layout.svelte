@@ -2,32 +2,11 @@
 import "../app.css";
 import { themeStore } from '$lib/stores/theme';
 import { settingsStore } from '$lib/stores/settings';
-import { checkDueReminders } from '$lib/services/notification';
 import { syncUnsyncedItems } from '$lib/services/sync';
 import { onMount } from 'svelte';
 
 let { children } = $props();
 
-let notificationInterval: number | null = null;
-
-function startNotificationChecking() {
-  if (notificationInterval) return; // Already running
-
-  // Check every 30 seconds
-  notificationInterval = setInterval(() => {
-    checkDueReminders();
-  }, 30000);
-
-  // Check immediately on start
-  checkDueReminders();
-}
-
-function stopNotificationChecking() {
-  if (notificationInterval) {
-    clearInterval(notificationInterval);
-    notificationInterval = null;
-  }
-}
 
 async function registerBackgroundSync() {
   if ('serviceWorker' in navigator && 'sync' in window.ServiceWorkerRegistration.prototype) {
@@ -47,25 +26,13 @@ onMount(() => {
     html.classList.toggle('dark', isDark);
   });
 
-  const unsubscribeSettings = settingsStore.subscribe(async (settings) => {
-    if (settings.notificationMethod === 'browser') {
-      startNotificationChecking();
-    } else {
-      stopNotificationChecking();
-    }
 
-    if (settings.autoSyncOnStart && navigator.onLine) {
-      await syncUnsyncedItems();
-    }
-  });
 
   // Register background sync
   registerBackgroundSync();
 
   return () => {
     unsubscribeTheme();
-    unsubscribeSettings();
-    stopNotificationChecking();
   };
 });
 </script>

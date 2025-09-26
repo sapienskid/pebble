@@ -6,10 +6,13 @@
   import { Lightbulb, Plus } from '@lucide/svelte';
   import Icon from '@iconify/svelte';
   import { getTagIcon, getRelativeTime } from '$lib/utils';
+  import { noteDialogOpen } from '$lib/stores/ui';
 
   let notes: Note[] = [];
-  // local state for dialog open control
-  let noteDialogOpen = false;
+  // bind to global store
+  let dialogOpen = false;
+  $: dialogOpen = $noteDialogOpen;
+  $: if (dialogOpen !== $noteDialogOpen) noteDialogOpen.set(dialogOpen);
 
   onMount(() => {
     const unsubscribe = notesStore.subscribe((value: Note[]) => {
@@ -18,6 +21,8 @@
 
     return () => unsubscribe();
   });
+
+  
 </script>
 
 <div class="flex flex-col relative">
@@ -51,15 +56,7 @@
     {/if}
   </main>
   <!-- Use an explicit open binding to avoid nesting a <button> inside the dialog trigger (SSR/hydration issues) -->
-  <NoteDialog bind:open={noteDialogOpen} />
-  <button
-    type="button"
-    on:click={() => (noteDialogOpen = true)}
-    class="fixed right-4 sm:right-[calc(50vw-15rem)] lg:right-[calc(50vw-13rem)] bottom-[calc(theme(spacing.20)+env(safe-area-inset-bottom,0px))] p-4 bg-primary rounded-full shadow-lg hover:bg-primary/90 z-[60] text-primary-foreground"
-    aria-label="Add new note"
-    style="translate: 0 0;"
-  >
-    <Plus class="w-6 h-6" />
-  </button>
+  <NoteDialog bind:open={dialogOpen} />
+  
 
 </div>
