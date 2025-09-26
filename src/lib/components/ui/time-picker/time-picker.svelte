@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { createEventDispatcher } from 'svelte';
   import {
     Root as SelectRoot,
     Trigger as SelectTrigger,
@@ -7,48 +8,65 @@
   } from "$lib/components/ui/select";
   import { Label } from "$lib/components/ui/label";
 
-  export let value: string = '';
+  export let initialValue: string = '';
   export let id: string | undefined = undefined;
   export let label: string = '';
 
-  const times = [
-    { value: '', label: 'No specific time' },
-    { value: 'now', label: 'Now' },
-    { value: '09:00', label: '9:00 AM' },
-    { value: '10:00', label: '10:00 AM' },
-    { value: '11:00', label: '11:00 AM' },
-    { value: '12:00', label: '12:00 PM' },
-    { value: '13:00', label: '1:00 PM' },
-    { value: '14:00', label: '2:00 PM' },
-    { value: '15:00', label: '3:00 PM' },
-    { value: '16:00', label: '4:00 PM' },
-    { value: '17:00', label: '5:00 PM' },
-    { value: '18:00', label: '6:00 PM' },
-    { value: '19:00', label: '7:00 PM' },
-    { value: '20:00', label: '8:00 PM' },
-    { value: '21:00', label: '9:00 PM' },
-    { value: '22:00', label: '10:00 PM' },
-  ];
+  const dispatch = createEventDispatcher();
 
-  $: if (value === 'now') {
-    value = new Date().toTimeString().slice(0, 5);
+  let hour: string = '';
+  let minute: string = '';
+
+  const hours = Array.from({ length: 24 }, (_, i) => ({
+    value: i.toString().padStart(2, '0'),
+    label: i === 0 ? '12 AM' : i < 12 ? `${i} AM` : i === 12 ? '12 PM' : `${i - 12} PM`
+  }));
+
+  const minutes = Array.from({ length: 60 }, (_, i) => ({
+    value: i.toString().padStart(2, '0'),
+    label: i.toString().padStart(2, '0')
+  }));
+
+  $: if (initialValue) {
+    const [h, m] = initialValue.split(':');
+    hour = h || '';
+    minute = m || '';
   }
 
-  $: selectedLabel = times.find(t => t.value === value)?.label || 'Select time';
+  $: if (hour && minute) {
+    const newValue = `${hour}:${minute}`;
+    if (newValue !== initialValue) {
+      dispatch('change', newValue);
+    }
+  }
+
+  $: selectedLabel = hour && minute ? `${parseInt(hour) === 0 ? 12 : parseInt(hour) <= 12 ? parseInt(hour) : parseInt(hour) - 12}:${minute} ${parseInt(hour) < 12 ? 'AM' : 'PM'}` : 'Select time';
 </script>
 
 <div>
   {#if label}
     <Label for={id}>{label}</Label>
   {/if}
-  <SelectRoot bind:value type="single">
-    <SelectTrigger>
-      {selectedLabel}
-    </SelectTrigger>
-    <SelectContent>
-      {#each times as time}
-        <SelectItem value={time.value}>{time.label}</SelectItem>
-      {/each}
-    </SelectContent>
-  </SelectRoot>
+  <div class="flex gap-2">
+    <SelectRoot bind:value={hour} type="single">
+      <SelectTrigger class="flex-1">
+        {hour ? hours.find(h => h.value === hour)?.label : 'Hour'}
+      </SelectTrigger>
+      <SelectContent class="max-h-32 overflow-y-auto">
+        {#each hours as h}
+          <SelectItem value={h.value}>{h.label}</SelectItem>
+        {/each}
+      </SelectContent>
+    </SelectRoot>
+    <SelectRoot bind:value={minute} type="single">
+      <SelectTrigger class="flex-1">
+        {minute ? minute : 'Minute'}
+      </SelectTrigger>
+      <SelectContent class="max-h-40 overflow-y-auto">
+        {#each minutes as m}
+          <SelectItem value={m.value}>{m.label}</SelectItem>
+        {/each}
+      </SelectContent>
+    </SelectRoot>
+  </div>
 </div>

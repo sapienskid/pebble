@@ -1,5 +1,6 @@
 import { writable } from 'svelte/store';
-import { browser } from '$app/environment';
+// Check if we're in a browser environment
+const isBrowser = typeof window !== 'undefined' && typeof window.indexedDB !== 'undefined';
 import { db, type Note } from '../db';
 
 export const notesStore = writable<Note[]>([]);
@@ -7,7 +8,7 @@ export const notesStore = writable<Note[]>([]);
 // Initialize store from IndexedDB
 async function initNotesStore() {
   try {
-    if (browser) {
+      if (isBrowser) {
       const notes = await (db as any).notes.toArray();
       notesStore.set(notes);
     }
@@ -18,7 +19,7 @@ async function initNotesStore() {
 
 // Subscribe to store changes and save to IndexedDB
 notesStore.subscribe(async (notes) => {
-  if (!browser) return;
+  if (!isBrowser) return;
   if (notes.length > 0) {
     try {
       await (db as any).notes.clear();

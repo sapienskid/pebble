@@ -98,7 +98,7 @@
             <div>
                 <Label for="scheduledTime">Scheduled Time</Label>
                 <div class="mt-2">
-                    <TimePicker id="scheduledTime" bind:value={scheduledTime} />
+                    <TimePicker id="scheduledTime" bind:initialValue={scheduledTime} on:change={(e) => scheduledTime = e.detail} />
                 </div>
                 {#if scheduledTime && !isValidTime}
                     <p class="text-sm text-destructive mt-1">Scheduled time cannot be in the past</p>

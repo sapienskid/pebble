@@ -173,7 +173,7 @@
             <div>
                 <Label for="scheduledTime" class="text-sm font-medium">Scheduled Time</Label>
                 <div class="mt-2">
-                    <TimePicker id="scheduledTime" bind:value={scheduledTime} />
+                    <TimePicker id="scheduledTime" initialValue={scheduledTime} on:change={(e) => scheduledTime = e.detail} />
                 </div>
             </div>
             <div>

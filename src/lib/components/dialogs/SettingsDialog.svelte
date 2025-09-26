@@ -18,6 +18,7 @@
   } from '$lib/components/ui/dialog';
   import DeleteWarningDialog from './DeleteWarningDialog.svelte';
   import { X, Copy, Trash2, Plus } from '@lucide/svelte';
+  import { requestNotificationPermission } from '$lib/services/notification';
 
   export let open = false;
 
@@ -38,10 +39,27 @@
   let apiKeyToDelete: string | null = null;
   let newlyCreatedKey: string | null = null;
   let copied = false;
+  let notificationPermission: NotificationPermission = 'default';
 
   // Subscribe to stores
   themeStore.subscribe(value => currentTheme = value);
   settingsStore.subscribe(value => settings = { ...value }); // Ensure it's a copy to avoid mutation issues
+
+  // Initialize notification permission
+  if (typeof Notification !== 'undefined') {
+    notificationPermission = Notification.permission;
+  }
+
+  async function handleNotificationMethodChange(method: 'browser' | 'ntfy') {
+    settings.notificationMethod = method;
+    if (method === 'browser') {
+      const granted = await requestNotificationPermission();
+      notificationPermission = Notification.permission;
+      if (!granted) {
+        // Could show a message, but for now just update status
+      }
+    }
+  }
 
   function saveSettings() {
     themeStore.set(currentTheme);
@@ -197,14 +215,19 @@
           <Label>Notification Method</Label>
           <div class="flex gap-4">
             <label class="flex items-center space-x-2">
-              <input type="radio" bind:group={settings.notificationMethod} value="browser" />
+              <input type="radio" bind:group={settings.notificationMethod} value="browser" on:change={() => handleNotificationMethodChange('browser')} />
               <span>Browser</span>
             </label>
             <label class="flex items-center space-x-2">
-              <input type="radio" bind:group={settings.notificationMethod} value="ntfy" />
+              <input type="radio" bind:group={settings.notificationMethod} value="ntfy" on:change={() => handleNotificationMethodChange('ntfy')} />
               <span>Ntfy</span>
             </label>
           </div>
+          {#if settings.notificationMethod === 'browser'}
+            <p class="text-xs text-muted-foreground">
+              Permission: {notificationPermission === 'granted' ? 'Granted' : notificationPermission === 'denied' ? 'Denied' : 'Not requested'}
+            </p>
+          {/if}
         </div>
       </div>
 

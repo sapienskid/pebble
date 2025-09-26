@@ -1,5 +1,6 @@
 import { writable } from 'svelte/store';
-import { browser } from '$app/environment';
+// Check if we're in a browser environment
+const isBrowser = typeof window !== 'undefined' && typeof window.indexedDB !== 'undefined';
 import { db, type ThemeRecord } from '../db';
 
 type Theme = 'light' | 'dark' | 'device';
@@ -10,7 +11,7 @@ function createThemeStore() {
 
   // Initialize from IndexedDB
   async function initTheme() {
-    if (!browser) return;
+    if (!isBrowser) return;
     try {
       const stored = await db.theme.get('theme');
       if (stored) {
@@ -31,7 +32,7 @@ function createThemeStore() {
     set: async (theme: Theme) => {
       set(theme);
       updateDocumentTheme(theme);
-      if (browser) {
+      if (isBrowser) {
         try {
           await db.theme.put({ id: 'theme', value: theme });
         } catch (error) {
@@ -43,7 +44,7 @@ function createThemeStore() {
 }
 
 function updateDocumentTheme(theme: Theme) {
-  if (!browser) return;
+  if (!isBrowser) return;
 
   const root = document.documentElement;
   const isDark = theme === 'dark' || (theme === 'device' && window.matchMedia('(prefers-color-scheme: dark)').matches);
@@ -54,6 +55,6 @@ function updateDocumentTheme(theme: Theme) {
 export const themeStore = createThemeStore();
 
 // Initialize theme on load
-if (browser) {
+if (isBrowser) {
   themeStore.subscribe(updateDocumentTheme);
 }
