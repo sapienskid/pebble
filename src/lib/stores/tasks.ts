@@ -1,4 +1,6 @@
 import { writable } from 'svelte/store';
+import { browser } from '$app/environment';
+import { db } from '../db';
 
 export type Task = {
   id: string;
@@ -9,12 +11,35 @@ export type Task = {
   timeSlot: 'morning' | 'afternoon' | 'evening';
   scheduledTime?: string;
   completed: boolean;
-  googleTaskId?: string;
+  synced: boolean;
 };
 
-export const tasksStore = writable<Task[]>([
-  { id: 't1', type: 'task', title: 'Review Project Proposal', date: '2025-09-25', timeSlot: 'morning', scheduledTime: '10:30 AM', completed: false },
-  { id: 't2', type: 'task', title: 'Review Project Proposal', date: '2025-09-25', timeSlot: 'morning', scheduledTime: '10:30 AM', completed: true },
-  { id: 't3', type: 'task', title: 'Review Project Proposal', date: '2025-09-26', timeSlot: 'afternoon', scheduledTime: '2:00 PM', completed: false },
-  { id: 't4', type: 'task', title: 'Review Project Proposal', date: '2025-09-25', timeSlot: 'evening', scheduledTime: '7:00 PM', completed: false }
-]);
+export const tasksStore = writable<Task[]>([]);
+
+// Initialize store from IndexedDB
+async function initTasksStore() {
+  try {
+    if (browser) {
+      const tasks = await (db as any).tasks.toArray();
+      tasksStore.set(tasks);
+    }
+  } catch (error) {
+    console.error('Failed to load tasks from IndexedDB:', error);
+  }
+}
+
+// Subscribe to store changes and save to IndexedDB
+tasksStore.subscribe(async (tasks) => {
+  if (!browser) return;
+  if (tasks.length > 0) {
+    try {
+      await (db as any).tasks.clear();
+      await (db as any).tasks.bulkAdd(tasks);
+    } catch (error) {
+      console.error('Failed to save tasks to IndexedDB:', error);
+    }
+  }
+});
+
+// Initialize on module load
+initTasksStore();

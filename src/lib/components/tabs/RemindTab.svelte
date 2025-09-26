@@ -5,10 +5,8 @@
   import { Switch } from "$lib/components/ui/switch";
   import ReminderDialog from '$lib/components/dialogs/ReminderDialog.svelte';
   import DeleteWarningDialog from '$lib/components/dialogs/DeleteWarningDialog.svelte';
-  import Header from '$lib/components/layout/Header.svelte';
-  import TabNavigation from '$lib/components/layout/TabNavigation.svelte';
   import { format } from 'date-fns';
-  import Icon from '@iconify/svelte';
+  import { Trash2, Plus, Bell } from '@lucide/svelte';
 
   let reminders: Reminder[] = [];
   let reminderDialogOpen = false;
@@ -46,45 +44,52 @@
 </script>
 
 <div class="grid grid-rows-[auto_1fr] h-full bg-background relative">
-  <Header title="Remind" />
 
   <main class="overflow-y-auto p-4 pb-20">
-    {#each reminders as rem}
-      <div
-        class="flex items-start p-4 mb-4 rounded-lg border shadow-sm"
-        class:bg-card={!rem.notified}
-        class:bg-green-50={rem.notified}
-        class:dark:bg-green-900={rem.notified}
-        class:border-green-200={rem.notified}
-        class:dark:border-green-700={rem.notified}
-      >
-        <div class="flex-1">
-          <div class="flex justify-between items-start">
-            <div>
-              <div class="font-medium">{rem.title}</div>
-              <div class="text-sm text-muted-foreground">{rem.description}</div>
+    {#if reminders.length === 0}
+      <div class="flex flex-col items-center justify-center h-full text-center p-8">
+        <Bell class="w-16 h-16 text-muted-foreground/50 mb-4" />
+        <h3 class="text-lg font-semibold text-foreground mb-2">No reminders set</h3>
+        <p class="text-sm text-muted-foreground mb-6">Set your first reminder to stay on track and never miss important moments.</p>
+      </div>
+    {:else}
+      {#each reminders as rem}
+        <div
+          class="flex items-start p-4 mb-4 rounded-lg border shadow-sm"
+          class:bg-card={!rem.notified}
+          class:bg-green-50={rem.notified}
+          class:dark:bg-green-900={rem.notified}
+          class:border-green-200={rem.notified}
+          class:dark:border-green-700={rem.notified}
+        >
+          <div class="flex-1">
+            <div class="flex justify-between items-start">
+              <div>
+                <div class="font-medium">{rem.title}</div>
+                <div class="text-sm text-muted-foreground">{rem.description}</div>
+              </div>
+              <div class="text-xs text-muted-foreground">
+                {rem.scheduledFor
+                  ? `${format(new Date(rem.scheduledFor), 'EEE, d MMM, yyyy')} · ${format(
+                      new Date(rem.scheduledFor),
+                      'p',
+                    )}`
+                  : ''}
+              </div>
             </div>
-            <div class="text-xs text-muted-foreground">
-              {rem.scheduledFor
-                ? `${format(new Date(rem.scheduledFor), 'EEE, d MMM, yyyy')} · ${format(
-                    new Date(rem.scheduledFor),
-                    'p',
-                  )}`
-                : ''}
-            </div>
-          </div>
-          <div class="mt-3 flex items-center justify-between">
-            <div class="text-xs text-muted-foreground">{rem.reminderType}</div>
-            <div class="flex items-center">
-              <Button variant="ghost" size="icon" class="mr-3" aria-label="Delete reminder" onclick={() => handleDelete(rem)}>
-                <Icon icon="streamline-freehand:delete-bin-2" class="w-4 h-4" />
-              </Button>
-              <Switch checked={rem.notified} ariaLabel="Toggle reminder notified" on:change={(e) => setNotified(rem.id, e.detail)} />
+            <div class="mt-3 flex items-center justify-between">
+              <div class="text-xs text-muted-foreground">{rem.reminderType}</div>
+              <div class="flex items-center">
+                <Button variant="ghost" size="icon" class="mr-3" aria-label="Delete reminder" onclick={() => handleDelete(rem)}>
+                  <Trash2 class="w-4 h-4" />
+                </Button>
+                <Switch checked={rem.notified} ariaLabel="Toggle reminder notified" on:change={(e) => setNotified(rem.id, e.detail)} />
+              </div>
             </div>
           </div>
         </div>
-      </div>
-    {/each}
+      {/each}
+    {/if}
   </main>
 
   <ReminderDialog bind:open={reminderDialogOpen} />
@@ -97,11 +102,11 @@
   <button
     type="button"
     on:click={() => (reminderDialogOpen = true)}
-    class="fixed right-4 lg:right-[calc(50vw-13rem)] bottom-[calc(theme(spacing.20)+env(safe-area-inset-bottom,0px))] p-4 bg-primary rounded-full shadow-lg hover:bg-primary/90 z-[60] text-primary-foreground"
+    class="fixed right-4 sm:right-[calc(50vw-15rem)] lg:right-[calc(50vw-13rem)] bottom-[calc(theme(spacing.20)+env(safe-area-inset-bottom,0px))] p-4 bg-primary rounded-full shadow-lg hover:bg-primary/90 z-[60] text-primary-foreground"
     aria-label="Add reminder"
     style="translate: 0 0;"
   >
-    <Icon icon="streamline-freehand:add-sign-bold" class="w-6 h-6" />
+    <Plus class="w-4 h-6" />
   </button>
 
   </div>

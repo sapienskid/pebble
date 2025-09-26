@@ -6,8 +6,7 @@
   import { Label } from "$lib/components/ui/label";
   import { v4 as uuidv4 } from 'uuid';
   import { notesStore } from '$lib/stores/notes';
-  import Icon from '@iconify/svelte';
-  import { getTagIcon } from '$lib/utils';
+  import { HelpCircle, Wifi, Lightbulb } from '@lucide/svelte';
   import FinalEditNoteDialog from './FinalEditNoteDialog.svelte';
 
   export let open: boolean = false;
@@ -17,6 +16,15 @@
   let showFinalEdit = false;
 
   const availableTags = ['queries', 'thought', 'idea'];
+
+  function getTagComponent(tag: string) {
+    switch (tag) {
+      case 'queries': return HelpCircle;
+      case 'thought': return Wifi;
+      case 'idea': return Lightbulb;
+      default: return Wifi;
+    }
+  }
 
   $: isValid = content.trim().length > 0 && content.length <= 500;
 
@@ -33,7 +41,7 @@
   function handleFinalConfirm(finalContent: string, finalTag: string | null) {
     const defaultTag = 'thoughts';
     const tags = finalTag ? [finalTag] : [defaultTag];
-    notesStore.update(list => [...list, { id: uuidv4(), content: finalContent, tags, timestamp: new Date().toISOString() }]);
+    notesStore.update(list => [...list, { id: uuidv4(), content: finalContent, tags, timestamp: new Date().toISOString(), synced: false }]);
     content = '';
     selectedTag = null;
     showFinalEdit = false;
@@ -79,7 +87,7 @@
                   ? 'border-primary bg-primary text-primary-foreground shadow-sm'
                   : 'border-border bg-background text-foreground hover:border-primary/50 hover:bg-primary/5'}"
             >
-              <Icon icon={getTagIcon(tag)} class="w-4 h-4" />
+              <svelte:component this={getTagComponent(tag)} class="w-4 h-4" />
               {tag}
             </button>
           {/each}

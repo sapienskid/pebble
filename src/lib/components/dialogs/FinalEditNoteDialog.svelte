@@ -3,8 +3,7 @@
   import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "$lib/components/ui/dialog";
   import { Textarea } from "$lib/components/ui/textarea";
   import { Label } from "$lib/components/ui/label";
-  import Icon from '@iconify/svelte';
-  import { getTagIcon } from '$lib/utils';
+  import { HelpCircle, Wifi, Lightbulb } from '@lucide/svelte';
 
   export let open: boolean = false;
   export let initialContent: string = '';
@@ -16,6 +15,15 @@
   let selectedTag = initialTag;
 
   const availableTags = ['queries', 'thought', 'idea'];
+
+  function getTagComponent(tag: string) {
+    switch (tag) {
+      case 'queries': return HelpCircle;
+      case 'thought': return Wifi;
+      case 'idea': return Lightbulb;
+      default: return Wifi;
+    }
+  }
 
   $: isValid = content.trim().length > 0 && content.length <= 500;
 
@@ -73,7 +81,7 @@
                   ? 'border-primary bg-primary text-primary-foreground shadow-sm'
                   : 'border-border bg-background text-foreground hover:border-primary/50 hover:bg-primary/5'}"
             >
-              <Icon icon={getTagIcon(tag)} class="w-4 h-4" />
+              <svelte:component this={getTagComponent(tag)} class="w-4 h-4" />
               {tag}
             </button>
           {/each}

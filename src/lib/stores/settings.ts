@@ -1,14 +1,9 @@
 import { writable } from 'svelte/store';
 import { browser } from '$app/environment';
-
-interface Settings {
-  syncEnabled: boolean;
-  apiKeys: string[];
-  autoSyncOnStart: boolean;
-  notificationMethod: 'browser' | 'ntfy';
-}
+import { db, type Settings } from '../db';
 
 const defaultSettings: Settings = {
+  id: 'settings',
   syncEnabled: false,
   apiKeys: [],
   autoSyncOnStart: false,
@@ -16,40 +11,47 @@ const defaultSettings: Settings = {
 };
 
 function createSettingsStore() {
-  let initialSettings: Settings;
-  if (browser) {
+  const { subscribe, set, update } = writable<Settings>(defaultSettings);
+
+  // Initialize from IndexedDB (only in browser)
+  async function initSettings() {
+    if (!browser) return;
     try {
-      const stored = localStorage.getItem('pebble-settings');
-      initialSettings = stored ? JSON.parse(stored) : defaultSettings;
-      // Ensure apiKeys is always an array
-      if (!Array.isArray(initialSettings.apiKeys)) {
-        initialSettings.apiKeys = [];
+      const stored = await (db as any).settings.get('settings');
+      if (stored) {
+        set(stored);
+      } else {
+        // Save defaults to DB
+        await (db as any).settings.put(defaultSettings);
       }
-    } catch (e) {
-      initialSettings = defaultSettings;
+    } catch (error) {
+      console.error('Failed to load settings from IndexedDB:', error);
     }
-  } else {
-    initialSettings = defaultSettings;
   }
 
-  const { subscribe, set, update } = writable<Settings>(initialSettings);
+  if (browser) initSettings();
 
   return {
     subscribe,
     update: (updater: (settings: Settings) => Settings) => {
       update(settings => {
         const newSettings = updater(settings);
+        // Save to IndexedDB (only in browser)
         if (browser) {
-          localStorage.setItem('pebble-settings', JSON.stringify(newSettings));
+          (db as any).settings.put(newSettings).catch((error: unknown) => {
+            console.error('Failed to save settings to IndexedDB:', error);
+          });
         }
         return newSettings;
       });
     },
     reset: () => {
-      if (browser) {
-        localStorage.setItem('pebble-settings', JSON.stringify(defaultSettings));
-      }
       set(defaultSettings);
+      if (browser) {
+        (db as any).settings.put(defaultSettings).catch((error: unknown) => {
+          console.error('Failed to reset settings in IndexedDB:', error);
+        });
+      }
     }
   };
 }

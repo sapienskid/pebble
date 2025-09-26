@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Button } from "$lib/components/ui/button";
-  import Icon from "@iconify/svelte";
+  import { Pen, Calendar, Bell } from "@lucide/svelte";
   export let active: "capture" | "plan" | "remind" = "capture";
   export let select: (tab: "capture" | "plan" | "remind") => void;
 </script>
@@ -12,22 +12,19 @@
     onclick={() => select("capture")}
     aria-label="Capture tab"
   >
-    <Icon
-      icon="streamline-freehand:edit-pencil"
+    <Pen
       class="w-6 h-6 hover:scale-110 transition-transform"
     />
   </Button>
 
   <Button variant={active === "plan" ? "default" : "outline"} size="icon" onclick={() => select("plan")} aria-label="Plan tab">
-    <Icon
-      icon="streamline-freehand:calendar-date"
+    <Calendar
       class="w-6 h-6 hover:scale-110 transition-transform"
     />
   </Button>
 
   <Button variant={active === "remind" ? "default" : "outline"} size="icon" onclick={() => select("remind")} aria-label="Remind tab">
-    <Icon
-      icon="streamline-freehand:alert-alarm-bell"
+    <Bell
       class="w-6 h-6 hover:scale-110 transition-transform"
     />
   </Button>

@@ -1,4 +1,6 @@
 import { writable } from 'svelte/store';
+import { browser } from '$app/environment';
+import { db } from '../db';
 
 export type BaseItem = {
   id: string;
@@ -19,11 +21,35 @@ export type Reminder = BaseItem & {
   notified: boolean;
 };
 
-export const remindersStore = writable<Reminder[]>([
-  { id: 'r1', type: 'reminder', title: 'Bookstore Visit', description: 'New Fiction Release', scheduledFor: '2025-09-28T15:00:00.000Z', reminderType: 'one-time', completed: false, notified: false, timestamp: '2025-09-25T10:00:00.000Z', synced: false, createdAt: '2025-09-25T10:00:00.000Z', updatedAt: '2025-09-25T10:00:00.000Z' },
-  { id: 'r2', type: 'reminder', title: 'Pet Supplies', description: 'Purchase dog food, cat litter, and toys', scheduledFor: '2025-09-25T14:30:00.000Z', reminderType: 'one-time', completed: false, notified: true, timestamp: '2025-09-24T09:00:00.000Z', synced: false, createdAt: '2025-09-24T09:00:00.000Z', updatedAt: '2025-09-24T09:00:00.000Z' },
-  { id: 'r3', type: 'reminder', title: 'Grocery Shopping', description: 'Buy milk, eggs, bread, and cheese', scheduledFor: '2025-09-26T11:30:00.000Z', reminderType: 'one-time', completed: false, notified: false, timestamp: '2025-09-23T08:00:00.000Z', synced: false, createdAt: '2025-09-23T08:00:00.000Z', updatedAt: '2025-09-23T08:00:00.000Z' }
-]);
+export const remindersStore = writable<Reminder[]>([]);
+
+// Initialize store from IndexedDB
+async function initRemindersStore() {
+  try {
+    if (browser) {
+      const reminders = await (db as any).reminders.toArray();
+      remindersStore.set(reminders);
+    }
+  } catch (error) {
+    console.error('Failed to load reminders from IndexedDB:', error);
+  }
+}
+
+// Subscribe to store changes and save to IndexedDB
+remindersStore.subscribe(async (reminders) => {
+  if (!browser) return;
+  if (reminders.length > 0) {
+    try {
+      await (db as any).reminders.clear();
+      await (db as any).reminders.bulkAdd(reminders);
+    } catch (error) {
+      console.error('Failed to save reminders to IndexedDB:', error);
+    }
+  }
+});
+
+// Initialize on module load
+initRemindersStore();
 
 export function deleteReminder(id: string) {
   remindersStore.update((reminders) => reminders.filter((r) => r.id !== id));

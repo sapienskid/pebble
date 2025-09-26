@@ -27,7 +27,6 @@ An offline-first Progressive Web App for capturing atomic notes, managing tasks,
 - Offline-first functionality with IndexedDB
 - Background sync for uploading when online
 - One-way sync to Obsidian daily notes
-- Google Tasks API integration
 - Notification support via ntfy
 - Service worker with cache-first strategy
 - Conflict resolution (local changes win)
@@ -190,7 +189,6 @@ interface Task {
   timeSlot: 'morning' | 'afternoon' | 'evening';
   scheduledTime?: string; // "9:30 AM"
   completed: boolean;
-  googleTaskId?: string; // from Google Tasks API
 }
 
 // Reminders (Remind tab)
@@ -229,12 +227,6 @@ Backend deployment is not yet implemented. Future steps:
 ## Configuration
 
 ### Planned Integrations (Not Yet Implemented)
-
-#### Google Tasks Integration
-- Create Google Cloud project
-- Enable Tasks API
-- Set up service account
-- Configure environment variables
 
 #### ntfy Notifications
 - Set up ntfy instance

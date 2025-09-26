@@ -50,6 +50,7 @@
                 timeSlot: getTimeSlot(scheduledTime),
                 scheduledTime: scheduledTime || undefined,
                 completed: false,
+                synced: false,
             };
             tasksStore.update((list) => [...list, newTask]);
             title = "";
