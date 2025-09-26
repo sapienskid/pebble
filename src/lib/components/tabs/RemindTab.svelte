@@ -8,7 +8,7 @@
   import Header from '$lib/components/layout/Header.svelte';
   import TabNavigation from '$lib/components/layout/TabNavigation.svelte';
   import { format } from 'date-fns';
-  import Icon from '@iconify/svelte';
+  import { Trash2, Plus } from '@lucide/svelte';
 
   let reminders: Reminder[] = [];
   let reminderDialogOpen = false;
@@ -77,7 +77,7 @@
             <div class="text-xs text-muted-foreground">{rem.reminderType}</div>
             <div class="flex items-center">
               <Button variant="ghost" size="icon" class="mr-3" aria-label="Delete reminder" onclick={() => handleDelete(rem)}>
-                <Icon icon="streamline-freehand:delete-bin-2" class="w-4 h-4" />
+                <Trash2 class="w-4 h-4" />
               </Button>
               <Switch checked={rem.notified} ariaLabel="Toggle reminder notified" on:change={(e) => setNotified(rem.id, e.detail)} />
             </div>
@@ -101,7 +101,7 @@
     aria-label="Add reminder"
     style="translate: 0 0;"
   >
-    <Icon icon="streamline-freehand:add-sign-bold" class="w-6 h-6" />
+    <Plus class="w-6 h-6" />
   </button>
 
   </div>

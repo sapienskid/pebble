@@ -5,6 +5,7 @@
   import NoteDialog from '$lib/components/dialogs/NoteDialog.svelte';
   import Header from '$lib/components/layout/Header.svelte';
   import TabNavigation from '$lib/components/layout/TabNavigation.svelte';
+  import { Lightbulb, Plus } from '@lucide/svelte';
   import Icon from '@iconify/svelte';
   import { getTagIcon, getRelativeTime } from '$lib/utils';
 
@@ -27,7 +28,7 @@
   <main class="flex-1  p-4 space-y-4 ">
     {#if notes.length === 0}
       <div class="flex flex-col items-center justify-center h-full text-center p-8">
-        <Icon icon="streamline-freehand:creativity-idea-bulb" class="w-16 h-16 text-muted-foreground/50 mb-4" />
+        <Lightbulb class="w-16 h-16 text-muted-foreground/50 mb-4" />
         <h3 class="text-lg font-semibold text-foreground mb-2">No notes yet</h3>
         <p class="text-sm text-muted-foreground mb-6">Capture your first atomic note to get started. Keep it concise!</p>
       </div>
@@ -61,7 +62,7 @@
     aria-label="Add new note"
     style="translate: 0 0;"
   >
-    <Icon icon="streamline-freehand:add-sign-bold" class="w-6 h-6" />
+    <Plus class="w-6 h-6" />
   </button>
 
 </div>

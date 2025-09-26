@@ -17,7 +17,7 @@
     DialogClose
   } from '$lib/components/ui/dialog';
   import DeleteWarningDialog from './DeleteWarningDialog.svelte';
-  import Icon from '@iconify/svelte';
+  import { X, Copy, Trash2, Plus } from '@lucide/svelte';
 
   export let open = false;
 
@@ -149,13 +149,13 @@
               <div class="flex items-center justify-between mb-2">
                 <span class="text-sm font-medium text-green-800 dark:text-green-200">New API Key Created</span>
                 <Button onclick={dismissNewKey} size="sm" variant="ghost">
-                  <Icon icon="lucide:x" class="w-4 h-4" />
+                  <X class="w-4 h-4" />
                 </Button>
               </div>
               <div class="flex gap-2">
                 <Input value={newlyCreatedKey} readonly class="flex-1 font-mono text-sm" />
                 <Button onclick={() => copyToClipboard(newlyCreatedKey!)} size="sm" disabled={copied}>
-                  <Icon icon="lucide:copy" class="w-4 h-4 mr-1" />
+                  <Copy class="w-4 h-4 mr-1" />
                   {copied ? 'Copied' : 'Copy'}
                 </Button>
               </div>
@@ -170,12 +170,12 @@
               <div class="flex gap-2 items-center">
                 <Input value={maskApiKey(key)} readonly class="flex-1 font-mono" />
                 <Button onclick={() => confirmDeleteApiKey(key)} size="sm" variant="destructive">
-                  <Icon icon="lucide:trash-2" class="w-4 h-4" />
+                  <Trash2 class="w-4 h-4" />
                 </Button>
               </div>
             {/each}
             <Button onclick={addApiKey} size="sm" variant="outline">
-              <Icon icon="lucide:plus" class="w-4 h-4 mr-2" />
+              <Plus class="w-4 h-4 mr-2" />
               Add API Key
             </Button>
           </div>

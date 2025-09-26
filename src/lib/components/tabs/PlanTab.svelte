@@ -7,7 +7,7 @@
   import TaskDialog from '$lib/components/dialogs/TaskDialog.svelte';
   import Header from '$lib/components/layout/Header.svelte';
   import TabNavigation from '$lib/components/layout/TabNavigation.svelte';
-  import Icon from '@iconify/svelte';
+  import { Check, Plus } from '@lucide/svelte';
   import { formatTime12Hour } from '$lib/utils';
 
   let tasks: Task[] = [];
@@ -58,7 +58,7 @@
                 <div class="text-xs text-muted-foreground">{formatTime12Hour(task.scheduledTime)}</div>
               </div>
               {#if task.completed}
-                <Icon icon="streamline-freehand:check-bold" class="w-4 h-4 text-green-500 ml-2" />
+                <Check class="w-4 h-4 text-green-500 ml-2" />
               {/if}
             </div>
           {/each}
@@ -90,7 +90,7 @@
                 <div class="text-xs text-muted-foreground">{formatTime12Hour(task.scheduledTime)}</div>
               </div>
               {#if task.completed}
-                <Icon icon="streamline-freehand:check-bold" class="w-4 h-4 text-green-500 ml-2" />
+                <Check class="w-4 h-4 text-green-500 ml-2" />
               {/if}
             </div>
           {/each}
@@ -107,7 +107,7 @@
     aria-label="Add task"
     style="translate: 0 0;"
   >
-    <Icon icon="streamline-freehand:add-sign-bold" class="w-6 h-6" />
+    <Plus class="w-6 h-6" />
   </button>
 
 </div>

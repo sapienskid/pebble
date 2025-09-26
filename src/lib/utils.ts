@@ -15,13 +15,13 @@ export type WithElementRef<T, U extends HTMLElement = HTMLElement> = T & { ref?:
 export function getTagIcon(tag: string): string {
     switch (tag) {
       case 'queries':
-        return 'streamline-freehand:information-desk-question-help';
+        return 'lucide:help-circle';
       case 'thought':
-        return 'streamline-freehand:wireless-wifi-signal-pole';
+        return 'lucide:wifi';
       case 'idea':
-        return 'streamline-freehand:creativity-idea-bulb';
+        return 'lucide:lightbulb';
       default:
-        return 'streamline-freehand:wireless-wifi-signal-pole';
+        return 'lucide:wifi';
     }
 }
 
