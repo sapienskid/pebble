@@ -1,10 +1,9 @@
 <script lang="ts">
   import { Button } from "$lib/components/ui/button";
-  import { FileText, RefreshCw, Settings } from '@lucide/svelte';
+  import { RefreshCw, Settings } from '@lucide/svelte';
   import SettingsDialog from '$lib/components/dialogs/SettingsDialog.svelte';
   import { onMount } from 'svelte';
-
-  let { title = '' } = $props();
+  import logoUrl from '$lib/assets/logo.svg?url';
 
   let settingsOpen = $state(false);
   let isOnline = $state(navigator.onLine);
@@ -22,10 +21,7 @@
 
 <header class="sticky top-0 bg-background flex items-center justify-between p-4">
   <div class="flex items-center gap-3">
-    <div class="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
-      <FileText class="w-4 h-4 text-primary" />
-    </div>
-    <div class="text-lg font-semibold">{title}</div>
+    <img src={logoUrl} alt="Logo" class="w-32 h-auto dark:invert" />
     <div class="w-2 h-2 rounded-full {isOnline ? 'bg-green-500' : 'bg-red-500'}"></div>
   </div>
   <div class="flex items-center gap-2">

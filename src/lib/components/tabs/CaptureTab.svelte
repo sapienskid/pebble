@@ -3,8 +3,6 @@
   import { notesStore } from '$lib/stores/notes';
   import { Button } from "$lib/components/ui/button";
   import NoteDialog from '$lib/components/dialogs/NoteDialog.svelte';
-  import Header from '$lib/components/layout/Header.svelte';
-  import TabNavigation from '$lib/components/layout/TabNavigation.svelte';
   import { Lightbulb, Plus } from '@lucide/svelte';
   import Icon from '@iconify/svelte';
   import { getTagIcon, getRelativeTime } from '$lib/utils';
@@ -23,7 +21,6 @@
 </script>
 
 <div class="flex flex-col relative">
-  <Header title="Capture" />
 
   <main class="flex-1  p-4 space-y-4 ">
     {#if notes.length === 0}
@@ -58,7 +55,7 @@
   <button
     type="button"
     on:click={() => (noteDialogOpen = true)}
-    class="fixed right-4 lg:right-[calc(50vw-13rem)] bottom-[calc(theme(spacing.20)+env(safe-area-inset-bottom,0px))] p-4 bg-primary rounded-full shadow-lg hover:bg-primary/90 z-[60] text-primary-foreground"
+    class="fixed right-4 sm:right-[calc(50vw-15rem)] lg:right-[calc(50vw-13rem)] bottom-[calc(theme(spacing.20)+env(safe-area-inset-bottom,0px))] p-4 bg-primary rounded-full shadow-lg hover:bg-primary/90 z-[60] text-primary-foreground"
     aria-label="Add new note"
     style="translate: 0 0;"
   >

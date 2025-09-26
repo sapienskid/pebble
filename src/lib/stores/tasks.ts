@@ -1,4 +1,5 @@
 import { writable } from 'svelte/store';
+import { browser } from '$app/environment';
 import { db } from '../db';
 
 export type Task = {
@@ -18,8 +19,10 @@ export const tasksStore = writable<Task[]>([]);
 // Initialize store from IndexedDB
 async function initTasksStore() {
   try {
-    const tasks = await db.tasks.toArray();
-    tasksStore.set(tasks);
+    if (browser) {
+      const tasks = await (db as any).tasks.toArray();
+      tasksStore.set(tasks);
+    }
   } catch (error) {
     console.error('Failed to load tasks from IndexedDB:', error);
   }
@@ -27,10 +30,11 @@ async function initTasksStore() {
 
 // Subscribe to store changes and save to IndexedDB
 tasksStore.subscribe(async (tasks) => {
+  if (!browser) return;
   if (tasks.length > 0) {
     try {
-      await db.tasks.clear();
-      await db.tasks.bulkAdd(tasks);
+      await (db as any).tasks.clear();
+      await (db as any).tasks.bulkAdd(tasks);
     } catch (error) {
       console.error('Failed to save tasks to IndexedDB:', error);
     }

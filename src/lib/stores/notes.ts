@@ -1,4 +1,5 @@
 import { writable } from 'svelte/store';
+import { browser } from '$app/environment';
 import { db, type Note } from '../db';
 
 export const notesStore = writable<Note[]>([]);
@@ -6,8 +7,10 @@ export const notesStore = writable<Note[]>([]);
 // Initialize store from IndexedDB
 async function initNotesStore() {
   try {
-    const notes = await db.notes.toArray();
-    notesStore.set(notes);
+    if (browser) {
+      const notes = await (db as any).notes.toArray();
+      notesStore.set(notes);
+    }
   } catch (error) {
     console.error('Failed to load notes from IndexedDB:', error);
   }
@@ -15,10 +18,11 @@ async function initNotesStore() {
 
 // Subscribe to store changes and save to IndexedDB
 notesStore.subscribe(async (notes) => {
+  if (!browser) return;
   if (notes.length > 0) {
     try {
-      await db.notes.clear();
-      await db.notes.bulkAdd(notes);
+      await (db as any).notes.clear();
+      await (db as any).notes.bulkAdd(notes);
     } catch (error) {
       console.error('Failed to save notes to IndexedDB:', error);
     }

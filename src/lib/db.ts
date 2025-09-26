@@ -1,4 +1,5 @@
 import Dexie, { type Table } from 'dexie';
+import { browser } from '$app/environment';
 
 // Theme interface
 export interface ThemeRecord {
@@ -71,4 +72,42 @@ class PebbleDB extends Dexie {
   }
 }
 
-export const db = new PebbleDB();
+// When running outside the browser (VS Code preview, SSR, tests, or restricted contexts),
+// IndexedDB may not be available. Provide a lightweight in-memory mock so imports don't throw
+// and store modules can still be loaded. In real browsers, use Dexie.
+class MockTable<T extends { id: string }> {
+  private map = new Map<string, T>();
+
+  async toArray() {
+    return Array.from(this.map.values());
+  }
+
+  async clear() {
+    this.map.clear();
+  }
+
+  async bulkAdd(items: T[]) {
+    for (const item of items) {
+      this.map.set(item.id, item);
+    }
+  }
+
+  async get(id: string) {
+    return this.map.get(id);
+  }
+
+  async put(item: T) {
+    this.map.set(item.id, item);
+    return item.id;
+  }
+}
+
+class MockDB {
+  notes = new MockTable<Note>();
+  tasks = new MockTable<Task>();
+  reminders = new MockTable<Reminder>();
+  settings = new MockTable<Settings>();
+  theme = new MockTable<ThemeRecord>();
+}
+
+export const db: PebbleDB | MockDB = browser ? new PebbleDB() : new MockDB();

@@ -1,4 +1,5 @@
 import { writable } from 'svelte/store';
+import { browser } from '$app/environment';
 import { db } from '../db';
 
 export type BaseItem = {
@@ -25,8 +26,10 @@ export const remindersStore = writable<Reminder[]>([]);
 // Initialize store from IndexedDB
 async function initRemindersStore() {
   try {
-    const reminders = await db.reminders.toArray();
-    remindersStore.set(reminders);
+    if (browser) {
+      const reminders = await (db as any).reminders.toArray();
+      remindersStore.set(reminders);
+    }
   } catch (error) {
     console.error('Failed to load reminders from IndexedDB:', error);
   }
@@ -34,10 +37,11 @@ async function initRemindersStore() {
 
 // Subscribe to store changes and save to IndexedDB
 remindersStore.subscribe(async (reminders) => {
+  if (!browser) return;
   if (reminders.length > 0) {
     try {
-      await db.reminders.clear();
-      await db.reminders.bulkAdd(reminders);
+      await (db as any).reminders.clear();
+      await (db as any).reminders.bulkAdd(reminders);
     } catch (error) {
       console.error('Failed to save reminders to IndexedDB:', error);
     }

@@ -61,7 +61,8 @@ self.addEventListener('fetch', (event) => {
 		// for everything else, try the network first, but
 		// fall back to the cache if we're offline
 		try {
-			const response = await fetch(event.request, { credentials: 'include' });
+			const fetchOptions = url.origin === self.location.origin ? { credentials: 'include' } : {};
+			const response = await fetch(event.request, fetchOptions);
 			// if we're offline, fetch can return a value that is not a Response
 			// instead of throwing - and we can't pass this non-Response to respondWith
 			if (!(response instanceof Response)) {
