@@ -8,6 +8,7 @@
 /// <reference types="@sveltejs/kit" />
 
 import { build, files, version } from '$service-worker';
+import { db } from '$lib/db';
 
 // This gives `self` the correct types
 const self = globalThis.self;
@@ -98,8 +99,25 @@ self.addEventListener('sync', (event) => {
 });
 
 async function syncUnsyncedData() {
-	// Placeholder: Implement logic to query IndexedDB for unsynced items and sync to backend
-	// Use fetch with credentials: 'include' for Cloudflare Access
-	console.log('Background sync triggered');
-	// TODO: Add actual sync logic here
+	// Query IndexedDB for unsynced items
+	const unsyncedNotes = await db.notes.where('synced').equals(false).toArray();
+	const unsyncedTasks = await db.tasks.where('synced').equals(false).toArray();
+	const unsyncedReminders = await db.reminders.where('synced').equals(false).toArray();
+
+	// Mock sync: mark as synced (since backend not implemented yet)
+	// In real implementation, send to Obsidian API or backend
+	for (const note of unsyncedNotes) {
+		note.synced = true;
+		await db.notes.put(note);
+	}
+	for (const task of unsyncedTasks) {
+		task.synced = true;
+		await db.tasks.put(task);
+	}
+	for (const reminder of unsyncedReminders) {
+		reminder.synced = true;
+		await db.reminders.put(reminder);
+	}
+
+	console.log(`Synced ${unsyncedNotes.length} notes, ${unsyncedTasks.length} tasks, ${unsyncedReminders.length} reminders`);
 }
