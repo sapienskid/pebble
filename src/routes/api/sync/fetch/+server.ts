@@ -15,7 +15,7 @@ export const GET: RequestHandler = async ({ platform, request, url }) => {
 	}
 
 	try {
-		// Verify authentication
+		// Verify authentication token
 		const authHeader = request.headers.get('authorization');
 		if (!authHeader || !authHeader.startsWith('Bearer ')) {
 			throw error(401, 'Missing or invalid authorization header');
