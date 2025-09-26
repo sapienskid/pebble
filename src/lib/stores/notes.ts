@@ -1,34 +1,29 @@
 import { writable } from 'svelte/store';
+import { db, type Note } from '../db';
 
-export const notesStore = writable<Note[]>([
-  {
-    id: '1',
-    content: 'Project Zenith kickoff - new ideas for Q3 campaigns, target audience, and content.',
-    timestamp: '2024-08-15T12:00:00Z',
-    tags: [],
-  },
-  {
-    id: '2',
-    content: 'Brainstorming session for Project Zenith. Focus on Q3 campaign audience and content.',
-    timestamp: '2024-08-15T12:30:00Z',
-    tags: [],
-  },
-  {
-    id: '3',
-    content: 'Discover groundbreaking ideas that redefine the future. Explore our innovative concepts.',
-    timestamp: '2024-07-24T13:00:00Z',
-    tags: [],
-  },
-  {
-    id: '4',
-    content: 'Try a "think-alone session" before sharing ideas. Or, use the "systematic" techniques.',
-    timestamp: '2024-08-01T14:00:00Z',
-    tags: [],
-  },
-  {
-    id: '5',
-    content: 'Consider using the "brainstorming" method to encourage collaborative thinking.',
-    timestamp: '2024-08-01T14:00:00Z',
-    tags: [],
-  },
-]);
+export const notesStore = writable<Note[]>([]);
+
+// Initialize store from IndexedDB
+async function initNotesStore() {
+  try {
+    const notes = await db.notes.toArray();
+    notesStore.set(notes);
+  } catch (error) {
+    console.error('Failed to load notes from IndexedDB:', error);
+  }
+}
+
+// Subscribe to store changes and save to IndexedDB
+notesStore.subscribe(async (notes) => {
+  if (notes.length > 0) {
+    try {
+      await db.notes.clear();
+      await db.notes.bulkAdd(notes);
+    } catch (error) {
+      console.error('Failed to save notes to IndexedDB:', error);
+    }
+  }
+});
+
+// Initialize on module load
+initNotesStore();

@@ -33,7 +33,7 @@
   function handleFinalConfirm(finalContent: string, finalTag: string | null) {
     const defaultTag = 'thoughts';
     const tags = finalTag ? [finalTag] : [defaultTag];
-    notesStore.update(list => [...list, { id: uuidv4(), content: finalContent, tags, timestamp: new Date().toISOString() }]);
+    notesStore.update(list => [...list, { id: uuidv4(), content: finalContent, tags, timestamp: new Date().toISOString(), synced: false }]);
     content = '';
     selectedTag = null;
     showFinalEdit = false;

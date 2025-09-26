@@ -45,7 +45,7 @@
 
   function saveSettings() {
     themeStore.set(currentTheme);
-    settingsStore.update(() => settings);
+    settingsStore.update(() => ({ ...settings, id: 'settings' }));
     open = false;
   }
 
