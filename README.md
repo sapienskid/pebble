@@ -13,7 +13,7 @@ An offline-first Progressive Web App for capturing atomic notes, managing tasks,
 - **Component Architecture**: Three-tab interface (Capture, Plan, Remind) with full CRUD dialogs
 - **State Management**: Svelte stores with IndexedDB persistence via Dexie
 - **Backend**: Cloudflare Workers with complete API endpoints and KV storage
-- **Authentication**: HMAC-based API key system for secure sync
+- **Authentication**: Bearer token with master secret for secure sync
 - **PWA**: Service worker, web manifest, offline functionality
 - **Deployment**: Live on Cloudflare Workers with KV and secrets configured
 
@@ -23,7 +23,6 @@ An offline-first Progressive Web App for capturing atomic notes, managing tasks,
 - **Three-tab interface**: Capture (atomic notes), Plan (tasks), Remind (reminders)
 - **Offline-first functionality**: IndexedDB storage with Dexie
 - **Background sync**: Automatic upload of notes/tasks when online
-- **API key management**: Generate, list, revoke sync keys
 - **Theme support**: Light/dark/device modes with persistence
 - **Notification system**: Browser notifications + ntfy integration
 - **Settings persistence**: All user preferences saved locally
@@ -54,7 +53,7 @@ An offline-first Progressive Web App for capturing atomic notes, managing tasks,
 ### Backend
 - **Runtime**: Cloudflare Workers
 - **Storage**: Cloudflare KV (key-value store)
-- **Authentication**: HMAC-SHA256 with API keys
+- **Authentication**: Bearer token with master secret
 - **Language**: TypeScript
 - **Deployment**: Wrangler CLI
 
@@ -142,11 +141,8 @@ pebble/
 │   │   ├── +layout.svelte
 │   │   ├── +page.svelte
 │   │   └── api/                       # Cloudflare Workers API routes
-│   │       ├── keys/
-│   │       │   ├── create/
-│   │       │   ├── list/
-│   │       │   └── revoke/
 │   │       └── sync/
+│   │           ├── fetch/
 │   │           ├── history/
 │   │           └── push/
 │   ├── app.css
@@ -226,16 +222,12 @@ interface ThemeRecord {
 
 ## API Endpoints
 
-### Authentication
-- `POST /api/keys/create` - Generate new API key
-- `GET /api/keys/list` - List all API keys
-- `POST /api/keys/revoke` - Revoke API key
-
 ### Sync
-- `POST /api/sync/push` - Push notes/tasks for sync
+- `POST /api/sync/push` - Push notes/tasks for sync (from PWA)
+- `GET /api/sync/fetch` - Fetch sync data (for Obsidian plugin, requires auth)
 - `GET /api/sync/history` - Get sync history
 
-All endpoints require HMAC-based authentication with API keys.
+Sync endpoints for Obsidian plugin require Bearer token authentication with master secret.
 
 ## Configuration
 
@@ -263,8 +255,8 @@ The app is fully deployed on Cloudflare Workers:
 ### Deployment Configuration
 - **Adapter**: @sveltejs/adapter-cloudflare
 - **Assets**: Static files served via Cloudflare Assets binding
-- **KV**: Persistent key-value storage for API keys and sync data
-- **Secrets**: HMAC master key for API authentication
+- **KV**: Temporary storage for sync data with TTL
+- **Secrets**: Master secret for API authentication
 
 ## Development Workflow
 
