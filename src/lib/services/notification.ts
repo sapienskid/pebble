@@ -23,12 +23,10 @@ export async function requestNotificationPermission(): Promise<boolean> {
 
 export function showReminderNotification(reminder: Reminder) {
   if (!('Notification' in window) || Notification.permission !== 'granted') {
-    console.log('Notification not supported or permission not granted');
     return;
   }
 
   try {
-    console.log('Creating notification for reminder:', reminder.id, reminder.title);
     const notification = new Notification(reminder.title, {
       body: reminder.description || 'Reminder',
       icon: '/icon-192.png',
@@ -60,6 +58,46 @@ export function showReminderNotification(reminder: Reminder) {
   }
 }
 
+async function sendNtfyNotification(reminder: Reminder) {
+  const ntfyServer = import.meta.env.VITE_NTFY_SERVER || 'https://ntfy.sh';
+  const ntfyTopic = import.meta.env.VITE_NTFY_TOPIC;
+  const ntfyUsername = import.meta.env.VITE_NTFY_USERNAME;
+  const ntfyPassword = import.meta.env.VITE_NTFY_PASSWORD;
+
+  if (!ntfyTopic) {
+    console.error('Ntfy topic not configured in environment variables');
+    return;
+  }
+
+  const url = `${ntfyServer}/${ntfyTopic}`;
+  const body = reminder.description || 'Reminder';
+  const headers: Record<string, string> = {
+    'Title': reminder.title,
+  };
+
+  if (ntfyUsername && ntfyPassword) {
+    const auth = btoa(`${ntfyUsername}:${ntfyPassword}`);
+    headers['Authorization'] = `Basic ${auth}`;
+  }
+
+  try {
+    console.log('Sending ntfy notification for reminder:', reminder.id);
+    const response = await fetch(url, {
+      method: 'POST',
+      headers,
+      body,
+    });
+
+    if (response.ok) {
+      console.log('Ntfy notification sent successfully');
+    } else {
+      console.error('Failed to send ntfy notification:', response.status, response.statusText);
+    }
+  } catch (error) {
+    console.error('Error sending ntfy notification:', error);
+  }
+}
+
 function markReminderComplete(reminderId: string) {
   remindersStore.update(reminders => {
     return reminders.map(r => {
@@ -73,7 +111,7 @@ function markReminderComplete(reminderId: string) {
 
 export function checkDueReminders() {
   const settings = get(settingsStore);
-  if (settings.notificationMethod !== 'browser') {
+  if (settings.notificationMethod !== 'browser' && settings.notificationMethod !== 'ntfy') {
     return;
   }
 
@@ -81,19 +119,18 @@ export function checkDueReminders() {
   const currentReminders = get(remindersStore);
 
   currentReminders.forEach(reminder => {
-    console.log('Checking reminder:', reminder.id, 'completed:', reminder.completed, 'notified:', reminder.notified, 'scheduledFor:', reminder.scheduledFor);
     if (reminder.completed || reminder.notified) {
-      console.log('Reminder already completed or notified');
       return;
     }
 
     const scheduledTime = new Date(reminder.scheduledFor);
-    const isDue = scheduledTime <= now;
-    console.log('Scheduled time:', scheduledTime.toISOString(), 'now:', now.toISOString(), 'isDue:', isDue);
-    if (isDue) {
+    if (scheduledTime <= now) {
       // Reminder is due
-      console.log('Reminder is due, showing notification');
-      showReminderNotification(reminder);
+      if (settings.notificationMethod === 'browser') {
+        showReminderNotification(reminder);
+      } else if (settings.notificationMethod === 'ntfy') {
+        sendNtfyNotification(reminder);
+      }
 
       // Mark as notified
       remindersStore.update(reminders => {

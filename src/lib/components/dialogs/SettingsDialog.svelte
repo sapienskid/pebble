@@ -110,7 +110,7 @@
 </script>
 
 <Dialog bind:open>
-  <DialogContent class="sm:max-w-[425px]">
+  <DialogContent class="sm:max-w-[425px] max-h-[80vh] overflow-y-auto">
     <DialogHeader>
       <DialogTitle>Settings</DialogTitle>
       <DialogDescription>
@@ -118,9 +118,9 @@
       </DialogDescription>
     </DialogHeader>
 
-    <div class="grid gap-6 py-4">
+    <div class="grid gap-4 py-4">
       <!-- Theme Section -->
-      <div class="space-y-4">
+      <div class="space-y-2">
         <h3 class="text-sm font-medium">Theme</h3>
         <div class="space-y-2">
           <Label>Appearance</Label>
@@ -153,7 +153,7 @@
       <Separator />
 
       <!-- Sync Section -->
-      <div class="space-y-4">
+      <div class="space-y-2">
         <h3 class="text-sm font-medium">Sync</h3>
         <div class="flex items-center space-x-2">
           <Switch bind:checked={settings.syncEnabled} on:change={(e) => settingsStore.update(s => ({...s, syncEnabled: e.detail}))} ariaLabel="Enable background sync" />
@@ -163,18 +163,18 @@
           <Label>API Keys (for Obsidian plugin)</Label>
           
           {#if newlyCreatedKey}
-            <div class="p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-md">
-              <div class="flex items-center justify-between mb-2">
-                <span class="text-sm font-medium text-green-800 dark:text-green-200">New API Key Created</span>
-                <Button onclick={dismissNewKey} size="sm" variant="ghost">
-                  <X class="w-4 h-4" />
+            <div class="p-2 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-md">
+              <div class="flex items-center justify-between mb-1">
+                <span class="text-xs font-medium text-green-800 dark:text-green-200">New API Key Created</span>
+                <Button onclick={dismissNewKey} size="sm" variant="ghost" class="h-6 w-6 p-0">
+                  <X class="w-3 h-3" />
                 </Button>
               </div>
               <div class="flex gap-2">
-                <Input value={newlyCreatedKey} readonly class="flex-1 font-mono text-sm" />
-                <Button onclick={() => copyToClipboard(newlyCreatedKey!)} size="sm" disabled={copied}>
-                  <Copy class="w-4 h-4 mr-1" />
-                  {copied ? 'Copied' : 'Copy'}
+                <Input value={newlyCreatedKey} readonly class="flex-1 font-mono text-xs h-8" />
+                <Button onclick={() => copyToClipboard(newlyCreatedKey!)} size="sm" disabled={copied} class="h-8 px-2">
+                  <Copy class="w-3 h-3 mr-1" />
+                  <span class="text-xs">{copied ? 'Copied' : 'Copy'}</span>
                 </Button>
               </div>
               <p class="text-xs text-green-600 dark:text-green-400 mt-1">
@@ -183,18 +183,18 @@
             </div>
           {/if}
           
-          <div class="space-y-2">
+          <div class="space-y-1">
             {#each settings.apiKeys as key (key)}
               <div class="flex gap-2 items-center">
-                <Input value={maskApiKey(key)} readonly class="flex-1 font-mono" />
-                <Button onclick={() => confirmDeleteApiKey(key)} size="sm" variant="destructive">
-                  <Trash2 class="w-4 h-4" />
+                <Input value={maskApiKey(key)} readonly class="flex-1 font-mono h-8" />
+                <Button onclick={() => confirmDeleteApiKey(key)} size="sm" variant="destructive" class="h-8 w-8 p-0">
+                  <Trash2 class="w-3 h-3" />
                 </Button>
               </div>
             {/each}
-            <Button onclick={addApiKey} size="sm" variant="outline">
-              <Plus class="w-4 h-4 mr-2" />
-              Add API Key
+            <Button onclick={addApiKey} size="sm" variant="outline" class="h-8">
+              <Plus class="w-3 h-3 mr-2" />
+              <span class="text-xs">Add API Key</span>
             </Button>
           </div>
         </div>
@@ -209,7 +209,7 @@
             <Separator />
 
       <!-- Notifications Section -->
-      <div class="space-y-4">
+      <div class="space-y-2">
         <h3 class="text-sm font-medium">Notifications</h3>
         <div class="space-y-2">
           <Label>Notification Method</Label>
@@ -227,12 +227,34 @@
             <p class="text-xs text-muted-foreground">
               Permission: {notificationPermission === 'granted' ? 'Granted' : notificationPermission === 'denied' ? 'Denied' : 'Not requested'}
             </p>
+          {:else if settings.notificationMethod === 'ntfy'}
+            <div class="text-xs text-muted-foreground space-y-1">
+              <p>Server URL, topic, username and password are configured via environment variables:</p>
+              <div class="grid grid-cols-2 gap-1 text-xs">
+                <span class="font-mono">VITE_NTFY_SERVER:</span>
+                <span class="{import.meta.env.VITE_NTFY_SERVER ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}">
+                  {import.meta.env.VITE_NTFY_SERVER ? '✓ Set' : '✗ Not set'}
+                </span>
+                <span class="font-mono">VITE_NTFY_TOPIC:</span>
+                <span class="{import.meta.env.VITE_NTFY_TOPIC ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}">
+                  {import.meta.env.VITE_NTFY_TOPIC ? '✓ Set' : '✗ Not set'}
+                </span>
+                <span class="font-mono">VITE_NTFY_USERNAME:</span>
+                <span class="{import.meta.env.VITE_NTFY_USERNAME ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}">
+                  {import.meta.env.VITE_NTFY_USERNAME ? '✓ Set' : '✗ Not set'}
+                </span>
+                <span class="font-mono">VITE_NTFY_PASSWORD:</span>
+                <span class="{import.meta.env.VITE_NTFY_PASSWORD ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}">
+                  {import.meta.env.VITE_NTFY_PASSWORD ? '✓ Set' : '✗ Not set'}
+                </span>
+              </div>
+            </div>
           {/if}
         </div>
       </div>
 
       <Separator />
-      <div class="space-y-4">
+      <div class="space-y-2">
         <h3 class="text-sm font-medium">About</h3>
         <div class="text-sm text-muted-foreground space-y-1">
           <p><strong>Pebble</strong> v1.0.0</p>
