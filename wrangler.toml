@@ -4,7 +4,7 @@ compatibility_date = "2025-09-24"
 
 [[kv_namespaces]]
 binding = "PEBBLE_SYNC_KV"
-id = "c9e4765973954b6e9a5458d1a8d531e7"
+id = "1645f24f4fab4077b489234dc31da874"
 
 [assets]
 directory = ".svelte-kit/cloudflare/assets"
