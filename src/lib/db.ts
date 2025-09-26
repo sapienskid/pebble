@@ -1,5 +1,4 @@
 import Dexie, { type Table } from 'dexie';
-import { browser } from '$app/environment';
 
 // Theme interface
 export interface ThemeRecord {
@@ -9,7 +8,6 @@ export interface ThemeRecord {
 export interface Settings {
   id: string; // probably just one record with id 'settings'
   syncEnabled: boolean;
-  apiKeys: string[];
   autoSyncOnStart: boolean;
   notificationMethod: 'browser' | 'ntfy';
 }
@@ -110,4 +108,7 @@ class MockDB {
   theme = new MockTable<ThemeRecord>();
 }
 
-export const db: PebbleDB | MockDB = browser ? new PebbleDB() : new MockDB();
+// Check if we're in a browser environment (not service worker)
+const isBrowser = typeof window !== 'undefined' && typeof window.indexedDB !== 'undefined';
+
+export const db: PebbleDB | MockDB = isBrowser ? new PebbleDB() : new MockDB();

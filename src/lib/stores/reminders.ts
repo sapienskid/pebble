@@ -1,5 +1,6 @@
 import { writable } from 'svelte/store';
-import { browser } from '$app/environment';
+// Check if we're in a browser environment
+const isBrowser = typeof window !== 'undefined' && typeof window.indexedDB !== 'undefined';
 import { db } from '../db';
 
 export type BaseItem = {
@@ -26,7 +27,7 @@ export const remindersStore = writable<Reminder[]>([]);
 // Initialize store from IndexedDB
 async function initRemindersStore() {
   try {
-    if (browser) {
+    if (isBrowser) {
       const reminders = await (db as any).reminders.toArray();
       remindersStore.set(reminders);
     }
@@ -37,7 +38,7 @@ async function initRemindersStore() {
 
 // Subscribe to store changes and save to IndexedDB
 remindersStore.subscribe(async (reminders) => {
-  if (!browser) return;
+  if (!isBrowser) return;
   if (reminders.length > 0) {
     try {
       await (db as any).reminders.clear();

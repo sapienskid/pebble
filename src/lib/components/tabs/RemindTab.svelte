@@ -54,33 +54,37 @@
       </div>
     {:else}
       {#each reminders as rem}
-        <div
-          class="flex items-start p-4 mb-4 rounded-lg border shadow-sm"
-          class:bg-card={!rem.notified}
-          class:bg-green-50={rem.notified}
-          class:dark:bg-green-900={rem.notified}
-          class:border-green-200={rem.notified}
-          class:dark:border-green-700={rem.notified}
-        >
-          <div class="flex-1">
-            <div class="flex justify-between items-start">
-              <div>
-                <div class="font-medium">{rem.title}</div>
-                <div class="text-sm text-muted-foreground">{rem.description}</div>
+        <div class="group flex items-start p-6 bg-card rounded-xl border border-border/50 shadow-sm hover:shadow-md transition-all duration-200 hover:border-primary/20 {rem.notified ? 'border-green-200 dark:border-green-700 bg-green-50/50 dark:bg-green-900/20' : ''}">
+          <div class="flex-1 min-w-0">
+            <div class="flex justify-between items-start mb-2">
+              <div class="flex-1">
+                <h3 class="text-base font-medium text-foreground leading-relaxed mb-1">{rem.title}</h3>
+                {#if rem.description}
+                  <p class="text-sm text-muted-foreground leading-relaxed">{rem.description}</p>
+                {/if}
               </div>
-              <div class="text-xs text-muted-foreground">
+              {#if rem.notified}
+                <div class="ml-3 flex items-center text-green-600 dark:text-green-400">
+                  <Bell class="w-4 h-4" />
+                </div>
+              {/if}
+            </div>
+            <div class="flex justify-between items-center">
+              <div class="text-xs text-muted-foreground/70 font-medium">
                 {rem.scheduledFor
                   ? `${format(new Date(rem.scheduledFor), 'EEE, d MMM, yyyy')} · ${format(
                       new Date(rem.scheduledFor),
                       'p',
                     )}`
                   : ''}
+                {#if rem.reminderType === 'recurring'}
+                  <span class="ml-2 px-2 py-0.5 rounded-full text-xs bg-primary/10 text-primary">
+                    {rem.recurring}
+                  </span>
+                {/if}
               </div>
-            </div>
-            <div class="mt-3 flex items-center justify-between">
-              <div class="text-xs text-muted-foreground">{rem.reminderType}</div>
-              <div class="flex items-center">
-                <Button variant="ghost" size="icon" class="mr-3" aria-label="Delete reminder" onclick={() => handleDelete(rem)}>
+              <div class="flex items-center gap-2">
+                <Button variant="ghost" size="icon" class="h-8 w-8 text-muted-foreground hover:text-destructive" aria-label="Delete reminder" onclick={() => handleDelete(rem)}>
                   <Trash2 class="w-4 h-4" />
                 </Button>
                 <Switch checked={rem.notified} ariaLabel="Toggle reminder notified" on:change={(e) => setNotified(rem.id, e.detail)} />
@@ -106,7 +110,7 @@
     aria-label="Add reminder"
     style="translate: 0 0;"
   >
-    <Plus class="w-4 h-6" />
+    <Plus class="w-6 h-6" />
   </button>
 
   </div>

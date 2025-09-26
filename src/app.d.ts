@@ -6,7 +6,12 @@ declare global {
 		// interface Locals {}
 		// interface PageData {}
 		// interface PageState {}
-		// interface Platform {}
+		interface Platform extends Record<string, any> {
+			env: {
+				PEBBLE_SYNC_KV: KVNamespace;
+				MASTER_HMAC_SECRET: string;
+			};
+		}
 	}
 
 	interface Note {

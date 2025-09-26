@@ -8,6 +8,7 @@
 /// <reference types="@sveltejs/kit" />
 
 import { build, files, version } from '$service-worker';
+import { db } from '$lib/db';
 
 // This gives `self` the correct types
 const self = globalThis.self;
@@ -98,8 +99,68 @@ self.addEventListener('sync', (event) => {
 });
 
 async function syncUnsyncedData() {
-	// Placeholder: Implement logic to query IndexedDB for unsynced items and sync to backend
-	// Use fetch with credentials: 'include' for Cloudflare Access
-	console.log('Background sync triggered');
-	// TODO: Add actual sync logic here
+	// Query IndexedDB for unsynced items
+	const unsyncedNotes = await db.notes.where('synced').equals(false).toArray();
+	const unsyncedTasks = await db.tasks.where('synced').equals(false).toArray();
+
+	// Get settings
+	const settings = await db.settings.get('settings');
+	if (!settings || !settings.syncEnabled || !settings.syncToken) {
+		return;
+	}
+
+	const token = settings.syncToken;
+
+	const items = [
+		...unsyncedNotes.map((note) => ({ type: 'note', data: note, markdown: note.content })),
+		...unsyncedTasks.map((task) => ({ type: 'task', data: task, markdown: formatTaskAsMarkdown(task) }))
+	];
+
+	for (const item of items) {
+		try {
+			const response = await fetch('/api/sync/push', {
+				method: 'POST',
+				headers: {
+					'Authorization': `Bearer ${token}`,
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify({
+					type: item.type,
+					markdown: item.markdown,
+					id: item.data.id,
+					createdAt: item.data.timestamp
+				})
+			});
+
+			if (response.ok) {
+				// Mark as synced
+				if (item.type === 'note') {
+					await db.notes.update(item.data.id, { synced: true });
+				} else {
+					await db.tasks.update(item.data.id, { synced: true });
+				}
+			} else {
+				console.error(`Failed to sync ${item.type}:`, response.statusText);
+			}
+		} catch (error) {
+			console.error(`Error syncing ${item.type}:`, error);
+		}
+	}
+
+	console.log(`Synced ${unsyncedNotes.length} notes, ${unsyncedTasks.length} tasks`);
+}
+
+function formatTaskAsMarkdown(task) {
+	const date = new Date(task.date).toLocaleDateString();
+	const timeSlot = task.timeSlot;
+	const scheduledTime = task.scheduledTime ? ` at ${task.scheduledTime}` : '';
+	const status = task.completed ? '✅ Completed' : '⏳ Pending';
+
+	let markdown = `- [${task.title}](${status}) - ${date} ${timeSlot}${scheduledTime}\n`;
+
+	if (task.description) {
+		markdown += `  ${task.description}\n`;
+	}
+
+	return markdown;
 }

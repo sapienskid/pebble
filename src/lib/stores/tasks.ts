@@ -1,5 +1,6 @@
 import { writable } from 'svelte/store';
-import { browser } from '$app/environment';
+// Check if we're in a browser environment
+const isBrowser = typeof window !== 'undefined' && typeof window.indexedDB !== 'undefined';
 import { db } from '../db';
 
 export type Task = {
@@ -19,7 +20,7 @@ export const tasksStore = writable<Task[]>([]);
 // Initialize store from IndexedDB
 async function initTasksStore() {
   try {
-    if (browser) {
+    if (isBrowser) {
       const tasks = await (db as any).tasks.toArray();
       tasksStore.set(tasks);
     }
@@ -30,11 +31,15 @@ async function initTasksStore() {
 
 // Subscribe to store changes and save to IndexedDB
 tasksStore.subscribe(async (tasks) => {
-  if (!browser) return;
+    if (!isBrowser) return;
   if (tasks.length > 0) {
     try {
       await (db as any).tasks.clear();
       await (db as any).tasks.bulkAdd(tasks);
+      // Trigger sync if online
+      if (navigator.onLine) {
+        import('$lib/services/sync').then(({ syncUnsyncedItems }) => syncUnsyncedItems());
+      }
     } catch (error) {
       console.error('Failed to save tasks to IndexedDB:', error);
     }
