@@ -4,6 +4,7 @@ import favicon from '$lib/assets/favicon.svg';
 import { themeStore } from '$lib/stores/theme';
 import { settingsStore } from '$lib/stores/settings';
 import { checkDueReminders } from '$lib/services/notification';
+import { syncUnsyncedItems } from '$lib/services/sync';
 import { onMount } from 'svelte';
 
 let { children } = $props();
@@ -29,6 +30,17 @@ function stopNotificationChecking() {
   }
 }
 
+async function registerBackgroundSync() {
+  if ('serviceWorker' in navigator && 'sync' in window.ServiceWorkerRegistration.prototype) {
+    try {
+      const registration = await navigator.serviceWorker.ready;
+      await (registration as any).sync.register('background-sync');
+    } catch (error) {
+      console.error('Background sync registration failed:', error);
+    }
+  }
+}
+
 onMount(() => {
   const unsubscribeTheme = themeStore.subscribe((theme) => {
     const html = document.documentElement;
@@ -36,13 +48,20 @@ onMount(() => {
     html.classList.toggle('dark', isDark);
   });
 
-  const unsubscribeSettings = settingsStore.subscribe((settings) => {
+  const unsubscribeSettings = settingsStore.subscribe(async (settings) => {
     if (settings.notificationMethod === 'browser') {
       startNotificationChecking();
     } else {
       stopNotificationChecking();
     }
+
+    if (settings.autoSyncOnStart && navigator.onLine) {
+      await syncUnsyncedItems();
+    }
   });
+
+  // Register background sync
+  registerBackgroundSync();
 
   return () => {
     unsubscribeTheme();

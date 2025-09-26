@@ -36,6 +36,10 @@ tasksStore.subscribe(async (tasks) => {
     try {
       await (db as any).tasks.clear();
       await (db as any).tasks.bulkAdd(tasks);
+      // Trigger sync if online
+      if (navigator.onLine) {
+        import('$lib/services/sync').then(({ syncUnsyncedItems }) => syncUnsyncedItems());
+      }
     } catch (error) {
       console.error('Failed to save tasks to IndexedDB:', error);
     }

@@ -24,6 +24,10 @@ notesStore.subscribe(async (notes) => {
     try {
       await (db as any).notes.clear();
       await (db as any).notes.bulkAdd(notes);
+      // Trigger sync if online
+      if (navigator.onLine) {
+        import('$lib/services/sync').then(({ syncUnsyncedItems }) => syncUnsyncedItems());
+      }
     } catch (error) {
       console.error('Failed to save notes to IndexedDB:', error);
     }

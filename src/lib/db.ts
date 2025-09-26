@@ -52,12 +52,24 @@ export interface Reminder {
   notified: boolean;
 }
 
+// API Key interface for local storage
+export interface ApiKey {
+  id: string; // keyId
+  tokenSecret: string;
+  createdAt: string;
+  revoked: boolean;
+  synced: boolean; // Whether synced to KV
+  name: string;
+  lastUsedAt?: string;
+}
+
 class PebbleDB extends Dexie {
   notes!: Table<Note>;
   tasks!: Table<Task>;
   reminders!: Table<Reminder>;
   settings!: Table<Settings>;
   theme!: Table<ThemeRecord>;
+  apiKeys!: Table<ApiKey>;
 
   constructor() {
     super('PebbleDB');
@@ -67,6 +79,10 @@ class PebbleDB extends Dexie {
       reminders: 'id, timestamp, synced, type, scheduledFor, reminderType',
       settings: 'id',
       theme: 'id'
+    });
+    // Add version 2 for API keys
+    this.version(2).stores({
+      apiKeys: 'id, createdAt, revoked, synced'
     });
   }
 }
@@ -107,6 +123,7 @@ class MockDB {
   reminders = new MockTable<Reminder>();
   settings = new MockTable<Settings>();
   theme = new MockTable<ThemeRecord>();
+  apiKeys = new MockTable<ApiKey>();
 }
 
 // Check if we're in a browser environment (not service worker)

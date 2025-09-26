@@ -8,14 +8,15 @@ export async function verifyApiKey(token: string, kv: KVNamespace, masterSecret:
 
 	const [keyId, tokenSecret] = parts;
 
-	const keyName = `api_key:${keyId}`;
-	const value = await kv.get(keyName);
+	// Get all keys
+	const value = await kv.get('api_keys');
+	const keysMap = value ? JSON.parse(value) : {};
 
-	if (!value) {
+	const record = keysMap[keyId];
+	if (!record) {
 		throw error(401, 'Invalid API key');
 	}
 
-	const record = JSON.parse(value);
 	if (record.revoked) {
 		throw error(401, 'API key revoked');
 	}
@@ -40,7 +41,7 @@ export async function verifyApiKey(token: string, kv: KVNamespace, masterSecret:
 
 	// Update lastUsedAt
 	record.lastUsedAt = new Date().toISOString();
-	await kv.put(keyName, JSON.stringify(record));
+	await kv.put('api_keys', JSON.stringify(keysMap));
 
 	return keyId;
 }

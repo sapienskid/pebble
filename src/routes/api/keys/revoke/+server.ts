@@ -21,17 +21,17 @@ export const POST: RequestHandler = async ({ platform, request }) => {
 
 		const keyId = body.keyId;
 
-		const keyName = `api_key:${keyId}`;
-		const value = await kv.get(keyName);
+		// Get existing keys
+		const existingKeys = await kv.get('api_keys');
+		const keysMap = existingKeys ? JSON.parse(existingKeys) : {};
 
-		if (!value) {
+		if (!keysMap[keyId]) {
 			throw error(404, 'API key not found');
 		}
 
-		const record = JSON.parse(value);
-		record.revoked = true;
+		keysMap[keyId].revoked = true;
 
-		await kv.put(keyName, JSON.stringify(record));
+		await kv.put('api_keys', JSON.stringify(keysMap));
 
 		return json({ success: true });
 	} catch (err) {

@@ -1,9 +1,14 @@
 name = "pebble"
 main = ".svelte-kit/cloudflare/_worker.js"
+compatibility_date = "2025-09-24"
 
-[kv_namespaces]
+[[kv_namespaces]]
 binding = "PEBBLE_SYNC_KV"
-id = "your-kv-namespace-id"  # Replace with actual KV namespace ID
+id = "c9e4765973954b6e9a5458d1a8d531e7"
+
+[assets]
+directory = ".svelte-kit/cloudflare/assets"
+binding = "ASSETS"
 
 [secrets]
 MASTER_HMAC_SECRET = "your-master-secret"  # Set via wrangler secret put

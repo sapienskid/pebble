@@ -102,22 +102,65 @@ async function syncUnsyncedData() {
 	// Query IndexedDB for unsynced items
 	const unsyncedNotes = await db.notes.where('synced').equals(false).toArray();
 	const unsyncedTasks = await db.tasks.where('synced').equals(false).toArray();
-	const unsyncedReminders = await db.reminders.where('synced').equals(false).toArray();
 
-	// Mock sync: mark as synced (since backend not implemented yet)
-	// In real implementation, send to Obsidian API or backend
-	for (const note of unsyncedNotes) {
-		note.synced = true;
-		await db.notes.put(note);
-	}
-	for (const task of unsyncedTasks) {
-		task.synced = true;
-		await db.tasks.put(task);
-	}
-	for (const reminder of unsyncedReminders) {
-		reminder.synced = true;
-		await db.reminders.put(reminder);
+	// Get settings
+	const settings = await db.settings.get('settings');
+	if (!settings || !settings.syncEnabled || !settings.syncToken) {
+		return;
 	}
 
-	console.log(`Synced ${unsyncedNotes.length} notes, ${unsyncedTasks.length} tasks, ${unsyncedReminders.length} reminders`);
+	const token = settings.syncToken;
+
+	const items = [
+		...unsyncedNotes.map((note) => ({ type: 'note', data: note, markdown: note.content })),
+		...unsyncedTasks.map((task) => ({ type: 'task', data: task, markdown: formatTaskAsMarkdown(task) }))
+	];
+
+	for (const item of items) {
+		try {
+			const response = await fetch('/api/sync/push', {
+				method: 'POST',
+				headers: {
+					'Authorization': `Bearer ${token}`,
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify({
+					type: item.type,
+					markdown: item.markdown,
+					id: item.data.id,
+					createdAt: item.data.timestamp
+				})
+			});
+
+			if (response.ok) {
+				// Mark as synced
+				if (item.type === 'note') {
+					await db.notes.update(item.data.id, { synced: true });
+				} else {
+					await db.tasks.update(item.data.id, { synced: true });
+				}
+			} else {
+				console.error(`Failed to sync ${item.type}:`, response.statusText);
+			}
+		} catch (error) {
+			console.error(`Error syncing ${item.type}:`, error);
+		}
+	}
+
+	console.log(`Synced ${unsyncedNotes.length} notes, ${unsyncedTasks.length} tasks`);
+}
+
+function formatTaskAsMarkdown(task) {
+	const date = new Date(task.date).toLocaleDateString();
+	const timeSlot = task.timeSlot;
+	const scheduledTime = task.scheduledTime ? ` at ${task.scheduledTime}` : '';
+	const status = task.completed ? '✅ Completed' : '⏳ Pending';
+
+	let markdown = `- [${task.title}](${status}) - ${date} ${timeSlot}${scheduledTime}\n`;
+
+	if (task.description) {
+		markdown += `  ${task.description}\n`;
+	}
+
+	return markdown;
 }

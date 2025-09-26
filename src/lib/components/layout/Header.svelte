@@ -4,9 +4,11 @@
   import SettingsDialog from '$lib/components/dialogs/SettingsDialog.svelte';
   import { onMount } from 'svelte';
   import logoUrl from '$lib/assets/logo.svg?url';
+  import { syncUnsyncedItems } from '$lib/services/sync';
 
   let settingsOpen = $state(false);
   let isOnline = $state(navigator.onLine);
+  let syncing = $state(false);
 
   onMount(() => {
     const updateOnline = () => isOnline = navigator.onLine;
@@ -17,6 +19,16 @@
       window.removeEventListener('offline', updateOnline);
     };
   });
+
+  async function handleSync() {
+    if (!isOnline || syncing) return;
+    syncing = true;
+    try {
+      await syncUnsyncedItems();
+    } finally {
+      syncing = false;
+    }
+  }
 </script>
 
 <header class="sticky top-0 bg-background flex items-center justify-between p-4">
@@ -25,8 +37,8 @@
     <div class="w-2 h-2 rounded-full {isOnline ? 'bg-green-500' : 'bg-red-500'}"></div>
   </div>
   <div class="flex items-center gap-2">
-    <Button variant="outline" size="icon" aria-label="Sync">
-      <RefreshCw class="w-4 h-4" />
+    <Button variant="outline" size="icon" onclick={handleSync} disabled={!isOnline || syncing} aria-label="Sync">
+      <RefreshCw class="w-4 h-4 {syncing ? 'animate-spin' : ''}" />
     </Button>
     <Button variant="outline" size="icon" onclick={() => settingsOpen = true} aria-label="Settings">
       <Settings class="w-4 h-4" />

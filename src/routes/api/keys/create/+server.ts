@@ -14,9 +14,19 @@ export const POST: RequestHandler = async ({ platform, request }) => {
 	}
 
 	try {
-		// Generate keyId and tokenSecret
-		const keyId = crypto.randomUUID();
-		const tokenSecret = crypto.randomUUID();
+		const body = await request.json().catch(() => ({})) as { keyId?: string; tokenSecret?: string };
+		let keyId: string;
+		let tokenSecret: string;
+
+		if (body.keyId && body.tokenSecret) {
+			// Syncing pre-generated key
+			keyId = body.keyId;
+			tokenSecret = body.tokenSecret;
+		} else {
+			// Generate new key
+			keyId = crypto.randomUUID();
+			tokenSecret = crypto.randomUUID();
+		}
 
 		// Compute HMAC hash using Web Crypto API
 		const encoder = new TextEncoder();
@@ -32,8 +42,21 @@ export const POST: RequestHandler = async ({ platform, request }) => {
 			.map(b => b.toString(16).padStart(2, '0'))
 			.join('');
 
-		// Store in KV
-		const keyRecord = {
+		// Check if key already exists (only for new keys)
+		if (!body.keyId) {
+			const existingKeys = await kv.get('api_keys');
+			const keysMap = existingKeys ? JSON.parse(existingKeys) : {};
+			if (keysMap[keyId]) {
+				throw error(409, 'Key already exists');
+			}
+		}
+
+		// Get existing keys
+		const existingKeys = await kv.get('api_keys');
+		const keysMap = existingKeys ? JSON.parse(existingKeys) : {};
+
+		// Store in keys map
+		keysMap[keyId] = {
 			keyHash,
 			createdAt: new Date().toISOString(),
 			revoked: false,
@@ -41,7 +64,7 @@ export const POST: RequestHandler = async ({ platform, request }) => {
 			lastUsedAt: null
 		};
 
-		await kv.put(`api_key:${keyId}`, JSON.stringify(keyRecord));
+		await kv.put('api_keys', JSON.stringify(keysMap));
 
 		// Return the token (shown only once)
 		const token = `${keyId}.${tokenSecret}`;
@@ -49,7 +72,7 @@ export const POST: RequestHandler = async ({ platform, request }) => {
 		return json({
 			token,
 			keyId,
-			name: keyRecord.name
+			name: `Key ${keyId.slice(0, 8)}`
 		});
 	} catch (err) {
 		console.error('Error creating API key:', err);
