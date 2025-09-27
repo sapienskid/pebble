@@ -2,19 +2,12 @@ import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 
 function corsHeaders(request: Request) {
-	const origin = request.headers.get('Origin');
-	const allowedOrigins = ['app://obsidian.md', 'https://capture.savinpokharel0.workers.dev'];
-
 	const headers: Record<string, string> = {
+        'Access-Control-Allow-Origin': '*',
 		'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
 		'Access-Control-Allow-Headers': 'Authorization, Content-Type, CF-Access-Client-Id, CF-Access-Client-Secret',
 		'Access-Control-Max-Age': '86400'
 	};
-
-	if (origin && allowedOrigins.includes(origin)) {
-		headers['Access-Control-Allow-Origin'] = origin;
-		headers['Vary'] = 'Origin';
-	}
 
 	return headers;
 }
