@@ -45,17 +45,17 @@ An offline-first Progressive Web App for capturing atomic notes, managing tasks,
 - **Styling**: Tailwind CSS v4 with custom design system
 - **UI Components**: bits-ui and shadcn-svelte
 - **Icons**: @lucide/svelte and @iconify/svelte
-- **Database**: IndexedDB via Dexie
+- **Database**: IndexedDB via Dexie 4.x
 - **Date Handling**: date-fns
 - **Build Tool**: Vite
-- **PWA**: vite-pwa-sveltekit
+- **PWA**: @vite-pwa/sveltekit
 
 ### Backend
 - **Runtime**: Cloudflare Workers
 - **Storage**: Cloudflare KV (key-value store)
 - **Authentication**: Bearer token with master secret
 - **Language**: TypeScript
-- **Deployment**: Wrangler CLI
+- **Deployment**: Wrangler 4.x
 
 ## Prerequisites
 
@@ -241,6 +241,28 @@ VITE_NTFY_PASSWORD=your-password
 - **KV Namespace**: `PEBBLE_SYNC_KV` (ID: c9e4765973954b6e9a5458d1a8d531e7)
 - **Secret**: `MASTER_HMAC_SECRET` (set via wrangler)
 - **Compatibility Date**: 2025-09-24
+
+### Wrangler Configuration
+
+The `wrangler.toml` file is used to configure the Cloudflare Workers deployment. It specifies the entry point for the worker, the compatibility date, and the bindings for KV namespaces and other resources.
+
+```toml
+name = "pebble"
+main = ".svelte-kit/cloudflare/_worker.js"
+compatibility_date = "2025-09-24"
+
+[[kv_namespaces]]
+binding = "PEBBLE_SYNC_KV"
+id = "1645f24f4fab4077b489234dc31da874"
+
+[assets]
+directory = ".svelte-kit/cloudflare/assets"
+binding = "ASSETS"
+
+# wrangler.toml (wrangler v3.88.0^)
+[observability.logs]
+enabled = true
+```
 
 ## Deployment
 
