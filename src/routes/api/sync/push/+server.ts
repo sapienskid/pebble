@@ -43,19 +43,6 @@ export const POST: RequestHandler = async ({ platform, request }) => {
 
 		await kv.put(syncKey, JSON.stringify(syncData), { expirationTtl: ttl });
 
-		// Create history entry
-		const historyKey = `history:${timestamp}:${syncId}`;
-		const historyData = {
-			eventId: syncId,
-			itemId: syncId,
-			eventType: 'sync-success',
-			timestamp,
-			type: body.type,
-			markdown: body.markdown.slice(0, 100) + (body.markdown.length > 100 ? '...' : '') // truncated for history
-		};
-
-		await kv.put(historyKey, JSON.stringify(historyData), { expirationTtl: ttl });
-
 		return json({ success: true, syncId });
 	} catch (err) {
 		console.error('Error pushing sync item:', err);

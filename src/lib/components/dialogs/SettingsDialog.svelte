@@ -20,20 +20,10 @@
   export let open = false;
 
   let currentTheme: "light" | "dark" | "device";
-  let settings: {
-    syncEnabled: boolean;
-    autoSyncOnStart: boolean;
-  } = {
-    syncEnabled: false,
-    autoSyncOnStart: false,
-  };
-
-  // Subscribe to stores
   themeStore.subscribe((value) => (currentTheme = value));
 
-  function saveSettings() {
+  function saveTheme() {
     themeStore.set(currentTheme);
-    settingsStore.update(() => ({ ...settings, id: "settings" }));
     open = false;
   }
 </script>
@@ -93,21 +83,20 @@
         <h3 class="text-sm font-medium">Sync</h3>
         <div class="flex items-center space-x-2">
           <Switch
-            bind:checked={settings.syncEnabled}
-            on:change={(e) =>
-              settingsStore.update((s) => ({ ...s, syncEnabled: e.detail }))}
+            checked={$settingsStore.syncEnabled}
+            on:change={(e) => {
+              settingsStore.update((s) => ({ ...s, syncEnabled: e.detail }));
+            }}
             ariaLabel="Enable background sync"
           />
           <Label>Enable background sync</Label>
         </div>
         <div class="flex items-center space-x-2">
           <Switch
-            bind:checked={settings.autoSyncOnStart}
-            on:change={(e) =>
-              settingsStore.update((s) => ({
-                ...s,
-                autoSyncOnStart: e.detail,
-              }))}
+            checked={$settingsStore.autoSyncOnStart}
+            on:change={(e) => {
+              settingsStore.update((s) => ({ ...s, autoSyncOnStart: e.detail }));
+            }}
             ariaLabel="Auto-sync on app start"
           />
           <Label>Auto-sync on app start</Label>
@@ -140,7 +129,7 @@
       <DialogClose>
         <Button variant="outline">Cancel</Button>
       </DialogClose>
-      <Button onclick={saveSettings}>Save changes</Button>
+      <Button onclick={saveTheme}>Save changes</Button>
     </DialogFooter>
   </DialogContent>
 </Dialog>
