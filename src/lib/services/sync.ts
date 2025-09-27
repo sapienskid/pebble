@@ -15,12 +15,8 @@ export async function syncUnsyncedItems() {
   // Get unsynced notes
   const unsyncedNotes = await pebbleDB.notes.where('synced').equals(false).toArray();
 
-  // Get unsynced tasks
-  const unsyncedTasks = await pebbleDB.tasks.where('synced').equals(false).toArray();
-
   const items = [
-    ...unsyncedNotes.map((note: any) => ({ type: 'note', data: note, markdown: note.content })),
-    ...unsyncedTasks.map((task: any) => ({ type: 'task', data: task, markdown: formatTaskAsMarkdown(task) }))
+    ...unsyncedNotes.map((note: any) => ({ type: 'note', data: note, markdown: note.content }))
   ];
 
   for (const item of items) {
@@ -40,11 +36,7 @@ export async function syncUnsyncedItems() {
 
       if (response.ok) {
         // Mark as synced
-        if (item.type === 'note') {
-          await pebbleDB.notes.update(item.data.id, { synced: true });
-        } else {
-          await pebbleDB.tasks.update(item.data.id, { synced: true });
-        }
+        await pebbleDB.notes.update(item.data.id, { synced: true });
       } else {
         console.error(`Failed to sync ${item.type}:`, response.statusText);
       }
@@ -54,17 +46,3 @@ export async function syncUnsyncedItems() {
   }
 }
 
-function formatTaskAsMarkdown(task: any): string {
-  const date = new Date(task.date).toLocaleDateString();
-  const timeSlot = task.timeSlot;
-  const scheduledTime = task.scheduledTime ? ` at ${task.scheduledTime}` : '';
-  const status = task.completed ? '✅ Completed' : '⏳ Pending';
-
-  let markdown = `- [${task.title}](${status}) - ${date} ${timeSlot}${scheduledTime}\n`;
-
-  if (task.description) {
-    markdown += `  ${task.description}\n`;
-  }
-
-  return markdown;
-}

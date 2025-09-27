@@ -101,7 +101,6 @@ self.addEventListener('sync', (event) => {
 async function syncUnsyncedData() {
 	// Query IndexedDB for unsynced items
 	const unsyncedNotes = await db.notes.where('synced').equals(false).toArray();
-	const unsyncedTasks = await db.tasks.where('synced').equals(false).toArray();
 
 	// Get settings
 	const settings = await db.settings.get('settings');
@@ -113,7 +112,6 @@ async function syncUnsyncedData() {
 
 	const items = [
 		...unsyncedNotes.map((note) => ({ type: 'note', data: note, markdown: note.content })),
-		...unsyncedTasks.map((task) => ({ type: 'task', data: task, markdown: formatTaskAsMarkdown(task) }))
 	];
 
 	for (const item of items) {
@@ -150,17 +148,3 @@ async function syncUnsyncedData() {
 	console.log(`Synced ${unsyncedNotes.length} notes, ${unsyncedTasks.length} tasks`);
 }
 
-function formatTaskAsMarkdown(task) {
-	const date = new Date(task.date).toLocaleDateString();
-	const timeSlot = task.timeSlot;
-	const scheduledTime = task.scheduledTime ? ` at ${task.scheduledTime}` : '';
-	const status = task.completed ? '✅ Completed' : '⏳ Pending';
-
-	let markdown = `- [${task.title}](${status}) - ${date} ${timeSlot}${scheduledTime}\n`;
-
-	if (task.description) {
-		markdown += `  ${task.description}\n`;
-	}
-
-	return markdown;
-}

@@ -78,4 +78,9 @@ class MockDB {
 // Check if we're in a browser environment (not service worker)
 const isBrowser = typeof window !== 'undefined' && typeof window.indexedDB !== 'undefined';
 
-export const db: PebbleDB | MockDB = isBrowser ? new PebbleDB() : new MockDB();
+// In service workers, IndexedDB is available via self
+const isServiceWorker = typeof self !== 'undefined' && typeof self.indexedDB !== 'undefined';
+
+const hasIndexedDB = isBrowser || isServiceWorker;
+
+export const db: PebbleDB | MockDB = hasIndexedDB ? new PebbleDB() : new MockDB();
