@@ -41,7 +41,15 @@ export const GET: RequestHandler = async ({ platform, request, url }) => {
 		// Sort by syncedAt descending
 		syncItems.sort((a, b) => new Date(b.syncedAt).getTime() - new Date(a.syncedAt).getTime());
 
-		return json({ items: syncItems });
+		// Normalize note payloads to always include tags array
+		const normalized = syncItems.map((item) => {
+			if (item && item.type === 'note') {
+				return { ...item, tags: Array.isArray(item.tags) ? item.tags : [] };
+			}
+			return item;
+		});
+
+		return json({ items: normalized });
 	} catch (err) {
 		console.error('Error fetching sync items:', err);
 		return json({ message: (err as any).message || 'Failed to fetch sync items' }, { status: 500 });

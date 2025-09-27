@@ -15,7 +15,7 @@ export const POST: RequestHandler = async ({ platform, request }) => {
 
 	try {
 		// Parse request body
-		const body: { type: string; markdown: string; id?: string; createdAt?: string } = await request.json();
+		const body: { type: string; markdown: string; id?: string; createdAt?: string; tags?: string[] } = await request.json();
 
 		if (!body.type || !body.markdown) {
 			throw error(400, 'type and markdown are required');
@@ -38,7 +38,9 @@ export const POST: RequestHandler = async ({ platform, request }) => {
 			markdown: body.markdown,
 			id: body.id || null,
 			createdAt: body.createdAt || timestamp,
-			syncedAt: timestamp
+			syncedAt: timestamp,
+			// Ensure tags is always an array for notes; tasks can ignore
+			tags: body.type === 'note' ? (Array.isArray(body.tags) ? body.tags : []) : undefined
 		};
 
 		await kv.put(syncKey, JSON.stringify(syncData), { expirationTtl: ttl });

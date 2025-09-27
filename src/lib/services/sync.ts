@@ -31,7 +31,8 @@ export async function syncUnsyncedItems() {
           type: item.type,
           markdown: item.markdown,
           id: item.data.id,
-          createdAt: item.data.timestamp
+          createdAt: item.data.timestamp,
+          tags: Array.isArray(item.data.tags) ? item.data.tags : []
         })
       });
 
