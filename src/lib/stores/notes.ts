@@ -17,7 +17,8 @@ async function purgeByRetention(retentionDays: number | null) {
   if (!isBrowser) return;
   try {
     const allNotes: Note[] = await (db as any).notes.toArray();
-    const kept = allNotes.filter(n => !isExpired(n.timestamp, retentionDays));
+    // Safety: never purge unsynced notes
+    const kept = allNotes.filter(n => n.synced === false || !isExpired(n.timestamp, retentionDays));
     if (kept.length !== allNotes.length) {
       // Persist filtered notes and update store
       await (db as any).notes.clear();

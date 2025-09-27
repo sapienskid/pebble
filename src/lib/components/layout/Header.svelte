@@ -5,10 +5,14 @@
   import { onMount } from 'svelte';
   import logoUrl from '$lib/assets/logo.svg?url';
   import { syncUnsyncedItems } from '$lib/services/sync';
+  import { syncStore } from '$lib/stores/sync';
+  import { getRelativeTime } from '$lib/utils';
 
   let settingsOpen = $state(false);
   let isOnline = $state(navigator.onLine);
-  let syncing = $state(false);
+
+  const syncing = $derived($syncStore.syncing);
+  const lastSyncAt = $derived($syncStore.lastSyncAt);
 
   onMount(() => {
     const updateOnline = () => isOnline = navigator.onLine;
@@ -22,12 +26,7 @@
 
   async function handleSync() {
     if (!isOnline || syncing) return;
-    syncing = true;
-    try {
-      await syncUnsyncedItems();
-    } finally {
-      syncing = false;
-    }
+    await syncUnsyncedItems();
   }
 </script>
 
@@ -36,7 +35,10 @@
     <img src={logoUrl} alt="Logo" class="w-32 h-auto dark:invert" />
     <div class="w-2 h-2 rounded-full {isOnline ? 'bg-green-500' : 'bg-red-500'}"></div>
   </div>
-  <div class="flex items-center gap-2">
+  <div class="flex items-center gap-3">
+    {#if lastSyncAt}
+      <div class="text-xs text-muted-foreground hidden sm:block">Last sync {getRelativeTime(lastSyncAt)}</div>
+    {/if}
     <Button variant="outline" size="icon" onclick={handleSync} disabled={!isOnline || syncing} aria-label="Sync">
       <RefreshCw class="w-4 h-4 {syncing ? 'animate-spin' : ''}" />
     </Button>

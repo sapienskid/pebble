@@ -51,7 +51,7 @@
   <DialogTrigger>
     <slot />
   </DialogTrigger>
-  <DialogContent class="sm:max-w-md">
+  <DialogContent class="sm:max-w-md max-h-[85vh] overflow-y-auto translate-y-[-4vh] md:translate-y-0">
     <DialogHeader>
       <DialogTitle class="text-xl font-semibold">Capture a New Note</DialogTitle>
     </DialogHeader>
