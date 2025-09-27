@@ -29,9 +29,12 @@ export const POST: RequestHandler = async ({ platform, request }) => {
 		const syncId = crypto.randomUUID();
 		const timestamp = new Date().toISOString();
 
-		// Store in KV with TTL (default 7 days)
-		const ttl = 7 * 24 * 60 * 60; // 7 days in seconds
-		const syncKey = `sync:${body.type}:${timestamp}:${syncId}`;
+    // Store in KV with TTL (default 7 days); allow client to request 7/15/30
+    const allowedDays = new Set([7, 15, 30]);
+    const requestedDays = (body as any).ttlDays;
+    const ttlDays = allowedDays.has(requestedDays) ? requestedDays : 7;
+    const ttl = ttlDays * 24 * 60 * 60; // seconds
+    const syncKey = `sync:${body.type}:${timestamp}:${syncId}`;
 
 		const syncData = {
 			type: body.type,

@@ -7,6 +7,8 @@ const defaultSettings: Settings = {
   id: 'settings',
   syncEnabled: false,
   autoSyncOnStart: false,
+  retentionDays: null, // keep forever by default
+  syncRetentionDays: 7,
 };
 
 function createSettingsStore() {

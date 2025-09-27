@@ -122,3 +122,10 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Utilities: FAB positioning fix for mid-sized screens */
+@layer utilities {
+  @media (min-width: 450px) {
+    .fab-abs-450 { position: absolute !important; }
+  }
+}

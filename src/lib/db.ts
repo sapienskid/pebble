@@ -10,6 +10,10 @@ export interface Settings {
   syncEnabled: boolean;
   syncToken?: string;
   autoSyncOnStart: boolean;
+  // TTL for local data: null = keep forever, otherwise number of days to retain
+  retentionDays?: number | null;
+  // TTL for Cloudflare KV sync items (in days); allowed: 7, 15, 30
+  syncRetentionDays?: 7 | 15 | 30;
 }
 
 // Note interface

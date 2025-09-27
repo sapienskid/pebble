@@ -1,6 +1,7 @@
 <script lang="ts">
   import { themeStore } from "$lib/stores/theme";
   import { settingsStore } from "$lib/stores/settings";
+  import { notesStore } from "$lib/stores/notes";
   import { Button } from "$lib/components/ui/button";
   import { Label } from "$lib/components/ui/label";
   import { Switch } from "$lib/components/ui/switch";
@@ -16,6 +17,7 @@
     DialogClose,
   } from "$lib/components/ui/dialog";
   import { X } from "@lucide/svelte";
+  import { db } from "$lib/db";
 
   export let open = false;
 
@@ -25,6 +27,20 @@
   function saveTheme() {
     themeStore.set(currentTheme);
     open = false;
+  }
+
+  function setRetention(retentionDays: number | null) {
+    settingsStore.update((s) => ({ ...s, retentionDays }));
+  }
+
+  async function clearLocalData() {
+    if (!confirm('This will remove all locally stored notes. This cannot be undone. Continue?')) return;
+    try {
+      await (db as any).notes.clear();
+      notesStore.set([]);
+    } catch (e) {
+      console.error('Failed to clear local data:', e);
+    }
   }
 </script>
 
@@ -105,9 +121,64 @@
 
       <Separator />
 
-      <Separator />
+      <!-- Data Retention Section -->
+      <div class="space-y-3">
+        <h3 class="text-sm font-medium">Local data retention</h3>
+        <p class="text-xs text-muted-foreground">Choose how long to keep notes locally. Older notes will be automatically removed.</p>
+        <div class="flex flex-wrap gap-2">
+          <Button
+            size="sm"
+            variant={$settingsStore.retentionDays == null ? 'default' : 'outline'}
+            onclick={() => setRetention(null)}
+          >Forever</Button>
+          <Button
+            size="sm"
+            variant={$settingsStore.retentionDays === 7 ? 'default' : 'outline'}
+            onclick={() => setRetention(7)}
+          >7 days</Button>
+          <Button
+            size="sm"
+            variant={$settingsStore.retentionDays === 15 ? 'default' : 'outline'}
+            onclick={() => setRetention(15)}
+          >15 days</Button>
+          <Button
+            size="sm"
+            variant={$settingsStore.retentionDays === 30 ? 'default' : 'outline'}
+            onclick={() => setRetention(30)}
+          >30 days</Button>
+        </div>
+        <div>
+          <Button variant="destructive" size="sm" onclick={clearLocalData}>Clear local data</Button>
+        </div>
+      </div>
 
       <Separator />
+
+      <!-- Cloud sync retention -->
+      <div class="space-y-3">
+        <h3 class="text-sm font-medium">Cloud sync retention</h3>
+        <p class="text-xs text-muted-foreground">Control how long items stay in Cloudflare KV. Lower values save quota.</p>
+        <div class="flex flex-wrap gap-2">
+          <Button
+            size="sm"
+            variant={$settingsStore.syncRetentionDays === 7 ? 'default' : 'outline'}
+            onclick={() => settingsStore.update(s => ({ ...s, syncRetentionDays: 7 }))}
+          >7 days</Button>
+          <Button
+            size="sm"
+            variant={$settingsStore.syncRetentionDays === 15 ? 'default' : 'outline'}
+            onclick={() => settingsStore.update(s => ({ ...s, syncRetentionDays: 15 }))}
+          >15 days</Button>
+          <Button
+            size="sm"
+            variant={$settingsStore.syncRetentionDays === 30 ? 'default' : 'outline'}
+            onclick={() => settingsStore.update(s => ({ ...s, syncRetentionDays: 30 }))}
+          >30 days</Button>
+        </div>
+      </div>
+
+      <Separator />
+
       <div class="space-y-2">
         <h3 class="text-sm font-medium">About</h3>
         <div class="text-sm text-muted-foreground space-y-1">

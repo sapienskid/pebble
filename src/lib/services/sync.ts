@@ -20,6 +20,7 @@ export async function syncUnsyncedItems() {
     ...unsyncedNotes.map((note: any) => ({ type: 'note', data: note, markdown: note.content }))
   ];
 
+  const ttlDays = (settings as Settings).syncRetentionDays ?? 7;
   for (const item of items) {
     try {
       const response = await fetch('/api/sync/push', {
@@ -32,7 +33,8 @@ export async function syncUnsyncedItems() {
           markdown: item.markdown,
           id: item.data.id,
           createdAt: item.data.timestamp,
-          tags: Array.isArray(item.data.tags) ? item.data.tags : []
+          tags: Array.isArray(item.data.tags) ? item.data.tags : [],
+          ttlDays
         })
       });
 
