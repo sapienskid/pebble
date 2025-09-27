@@ -143,7 +143,6 @@ pebble/
 │   │   └── api/                       # Cloudflare Workers API routes
 │   │       └── sync/
 │   │           ├── fetch/
-│   │           ├── history/
 │   │           └── push/
 │   ├── app.css
 │   ├── app.d.ts
@@ -225,7 +224,6 @@ interface ThemeRecord {
 ### Sync
 - `POST /api/sync/push` - Push notes/tasks for sync (from PWA)
 - `GET /api/sync/fetch` - Fetch sync data (for Obsidian plugin, requires auth)
-- `GET /api/sync/history` - Get sync history
 
 Sync endpoints for Obsidian plugin require Bearer token authentication with master secret.
 
