@@ -12,8 +12,9 @@ export async function syncUnsyncedItems() {
   // Cast db to PebbleDB
   const pebbleDB = db as any;
 
-  // Get unsynced notes
-  const unsyncedNotes = await pebbleDB.notes.where('synced').equals(false).toArray();
+  // Get unsynced notes - filter to handle undefined/null synced values
+  const allNotes = await pebbleDB.notes.toArray();
+  const unsyncedNotes = allNotes.filter((note: any) => note.synced === false || note.synced === undefined || note.synced === null);
 
   const items = [
     ...unsyncedNotes.map((note: any) => ({ type: 'note', data: note, markdown: note.content }))

@@ -31,10 +31,17 @@ class PebbleDB extends Dexie {
 
   constructor() {
     super('PebbleDB');
-    this.version(1).stores({
-      notes: 'id, timestamp, synced, tags',
+    this.version(2).stores({
+      notes: 'id, timestamp, synced, *tags',
       settings: 'id',
       theme: 'id'
+    }).upgrade(trans => {
+      // Ensure all existing notes have synced field set to false
+      return trans.table('notes').toCollection().modify(note => {
+        if (note.synced === undefined || note.synced === null) {
+          note.synced = false;
+        }
+      });
     });
   }
 }
