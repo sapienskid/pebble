@@ -100,7 +100,8 @@ self.addEventListener('sync', (event) => {
 
 async function syncUnsyncedData() {
 	// Query IndexedDB for unsynced items
-	const unsyncedNotes = await db.notes.where('synced').equals(false).toArray();
+	const allNotes = await db.notes.toArray();
+	const unsyncedNotes = allNotes.filter(note => !note.synced);
 
 	// Get settings
 	const settings = await db.settings.get('settings');
@@ -132,11 +133,7 @@ async function syncUnsyncedData() {
 
 			if (response.ok) {
 				// Mark as synced
-				if (item.type === 'note') {
-					await db.notes.update(item.data.id, { synced: true });
-				} else {
-					await db.tasks.update(item.data.id, { synced: true });
-				}
+				await db.notes.update(item.data.id, { synced: true });
 			} else {
 				console.error(`Failed to sync ${item.type}:`, response.statusText);
 			}
@@ -145,6 +142,6 @@ async function syncUnsyncedData() {
 		}
 	}
 
-	console.log(`Synced ${unsyncedNotes.length} notes, ${unsyncedTasks.length} tasks`);
+	console.log(`Synced ${unsyncedNotes.length} notes`);
 }
 
