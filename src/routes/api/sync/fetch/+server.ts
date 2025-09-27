@@ -1,21 +1,6 @@
 import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 
-function corsHeaders(request: Request) {
-	const headers: Record<string, string> = {
-        'Access-Control-Allow-Origin': '*',
-		'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
-		'Access-Control-Allow-Headers': 'Authorization, Content-Type, CF-Access-Client-Id, CF-Access-Client-Secret',
-		'Access-Control-Max-Age': '86400'
-	};
-
-	return headers;
-}
-
-export const OPTIONS: RequestHandler = async ({ request }) => {
-	return new Response(null, { status: 204, headers: corsHeaders(request) });
-};
-
 export const GET: RequestHandler = async ({ platform, request, url }) => {
 	if (!platform) {
 		throw error(500, 'Platform not available');
@@ -51,9 +36,9 @@ export const GET: RequestHandler = async ({ platform, request, url }) => {
 			return item;
 		});
 
-		return json({ items: normalized }, { headers: corsHeaders(request) });
+		return json({ items: normalized });
 	} catch (err) {
 		console.error('Error fetching sync items:', err);
-		return json({ message: (err as any).message || 'Failed to fetch sync items' }, { status: 500, headers: corsHeaders(request) });
+		return json({ message: (err as any).message || 'Failed to fetch sync items' }, { status: 500 });
 	}
 };
