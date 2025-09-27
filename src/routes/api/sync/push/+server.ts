@@ -1,6 +1,19 @@
 import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 
+function corsHeaders(_request: Request) {
+	return {
+		'Access-Control-Allow-Origin': '*',
+		'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
+		'Access-Control-Allow-Headers': 'Authorization, Content-Type',
+		'Access-Control-Max-Age': '86400'
+	};
+}
+
+export const OPTIONS: RequestHandler = async ({ request }) => {
+	return new Response(null, { status: 204, headers: corsHeaders(request) });
+};
+
 export const POST: RequestHandler = async ({ platform, request }) => {
 	if (!platform) {
 		throw error(500, 'Platform not available');
@@ -48,7 +61,7 @@ export const POST: RequestHandler = async ({ platform, request }) => {
 
 		await kv.put(syncKey, JSON.stringify(syncData), { expirationTtl: ttl });
 
-		return json({ success: true, syncId });
+		return json({ success: true, syncId }, { headers: corsHeaders(request) });
 	} catch (err) {
 		console.error('Error pushing sync item:', err);
 		throw error(500, 'Failed to push sync item');

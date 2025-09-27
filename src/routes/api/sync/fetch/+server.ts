@@ -2,6 +2,19 @@ import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { verifyApiKey } from '$lib/auth';
 
+function corsHeaders(_request: Request) {
+	return {
+		'Access-Control-Allow-Origin': '*',
+		'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
+		'Access-Control-Allow-Headers': 'Authorization, Content-Type',
+		'Access-Control-Max-Age': '86400'
+	};
+}
+
+export const OPTIONS: RequestHandler = async ({ request }) => {
+	return new Response(null, { status: 204, headers: corsHeaders(request) });
+};
+
 export const GET: RequestHandler = async ({ platform, request, url }) => {
 	if (!platform) {
 		throw error(500, 'Platform not available');
@@ -17,14 +30,14 @@ export const GET: RequestHandler = async ({ platform, request, url }) => {
 	try {
 		// Verify authentication token
 		const authHeader = request.headers.get('authorization');
-		if (!authHeader || !authHeader.startsWith('Bearer ')) {
-			return json({ message: 'Missing or invalid authorization header' }, { status: 401 });
+if (!authHeader || !authHeader.startsWith('Bearer ')) {
+			return json({ message: 'Missing or invalid authorization header' }, { status: 401, headers: corsHeaders(request) });
 		}
 		const token = authHeader.slice(7);
 		try {
 			await verifyApiKey(token, kv, masterSecret);
-		} catch (authErr) {
-			return json({ message: 'Invalid API key' }, { status: 401 });
+} catch (authErr) {
+			return json({ message: 'Invalid API key' }, { status: 401, headers: corsHeaders(request) });
 		}
 
 		// Fetch all sync items
@@ -49,9 +62,9 @@ export const GET: RequestHandler = async ({ platform, request, url }) => {
 			return item;
 		});
 
-		return json({ items: normalized });
+		return json({ items: normalized }, { headers: corsHeaders(request) });
 	} catch (err) {
 		console.error('Error fetching sync items:', err);
-		return json({ message: (err as any).message || 'Failed to fetch sync items' }, { status: 500 });
+		return json({ message: (err as any).message || 'Failed to fetch sync items' }, { status: 500, headers: corsHeaders(request) });
 	}
 };
