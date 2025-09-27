@@ -1,14 +1,22 @@
 import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { verifyApiKey } from '$lib/auth';
 
-function corsHeaders(_request: Request) {
-	return {
-		'Access-Control-Allow-Origin': '*',
+function corsHeaders(request: Request) {
+	const origin = request.headers.get('Origin');
+	const allowedOrigins = ['app://obsidian.md', 'https://capture.savinpokharel0.workers.dev'];
+
+	const headers: Record<string, string> = {
 		'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
-		'Access-Control-Allow-Headers': 'Authorization, Content-Type',
+		'Access-Control-Allow-Headers': 'Authorization, Content-Type, CF-Access-Client-Id, CF-Access-Client-Secret',
 		'Access-Control-Max-Age': '86400'
 	};
+
+	if (origin && allowedOrigins.includes(origin)) {
+		headers['Access-Control-Allow-Origin'] = origin;
+		headers['Vary'] = 'Origin';
+	}
+
+	return headers;
 }
 
 export const OPTIONS: RequestHandler = async ({ request }) => {
@@ -28,18 +36,6 @@ export const GET: RequestHandler = async ({ platform, request, url }) => {
 	}
 
 	try {
-		// Verify authentication token
-		const authHeader = request.headers.get('authorization');
-if (!authHeader || !authHeader.startsWith('Bearer ')) {
-			return json({ message: 'Missing or invalid authorization header' }, { status: 401, headers: corsHeaders(request) });
-		}
-		const token = authHeader.slice(7);
-		try {
-			await verifyApiKey(token, kv, masterSecret);
-} catch (authErr) {
-			return json({ message: 'Invalid API key' }, { status: 401, headers: corsHeaders(request) });
-		}
-
 		// Fetch all sync items
 		const list = await kv.list({ prefix: 'sync:' });
 		const syncItems: any[] = [];
