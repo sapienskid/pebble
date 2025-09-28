@@ -7,10 +7,11 @@
   import Icon from '@iconify/svelte';
   import { getTagIcon, getRelativeTime } from '$lib/utils';
   import { noteDialogOpen } from '$lib/stores/ui';
+  import type { Note } from '$lib/db';
 
   let notes: Note[] = [];
-  // bind to global store
   let dialogOpen = false;
+
   $: dialogOpen = $noteDialogOpen;
   $: if (dialogOpen !== $noteDialogOpen) noteDialogOpen.set(dialogOpen);
 
@@ -21,13 +22,11 @@
 
     return () => unsubscribe();
   });
-
-  
 </script>
 
 <div class="flex flex-col relative">
 
-  <main class="flex-1  p-4 space-y-4 ">
+  <main class="flex-1 p-4 space-y-4">
     {#if notes.length === 0}
       <div class="flex flex-col items-center justify-center h-full text-center p-8">
         <Lightbulb class="w-16 h-16 text-muted-foreground/50 mb-4" />
@@ -35,8 +34,8 @@
         <p class="text-sm text-muted-foreground mb-6">Capture your first atomic note to get started. Keep it concise!</p>
       </div>
     {:else}
-      {#each notes as note}
-        <div class="group flex items-start p-6 bg-card rounded-xl border border-border/50 shadow-sm hover:shadow-md transition-all duration-200 hover:border-primary/20">
+      {#each notes as note (note.id)}
+        <div class="group flex items-start p-6 bg-card rounded-xl border border-border/50 shadow-sm hover:shadow-md transition-all duration-200 hover:border-primary/20 relative">
           <div class="flex-1 min-w-0">
             <p class="text-base text-foreground leading-relaxed mb-2 line-clamp-3">{note.content}</p>
             {#if note.tags.length > 0}
@@ -55,8 +54,7 @@
       {/each}
     {/if}
   </main>
-  <!-- Use an explicit open binding to avoid nesting a <button> inside the dialog trigger (SSR/hydration issues) -->
+
   <NoteDialog bind:open={dialogOpen} />
-  
 
 </div>

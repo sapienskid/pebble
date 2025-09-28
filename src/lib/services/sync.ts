@@ -29,7 +29,8 @@ export async function syncUnsyncedItems() {
         const response = await fetch('/api/sync/push', {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            ...(settings.syncToken ? { 'Authorization': `Bearer ${settings.syncToken}` } : {})
           },
           body: JSON.stringify({
             type: item.type,

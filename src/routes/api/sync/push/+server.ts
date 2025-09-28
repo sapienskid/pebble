@@ -34,8 +34,8 @@ export const POST: RequestHandler = async ({ platform, request }) => {
 			throw error(400, 'type and markdown are required');
 		}
 
-		if (!['note', 'task'].includes(body.type)) {
-			throw error(400, 'type must be note or task');
+		if (!['note'].includes(body.type)) {
+			throw error(400, 'type must be note');
 		}
 
 		// Generate sync ID

@@ -47,29 +47,38 @@ async function initNotesStore() {
   }
 }
 
-// Subscribe to store changes and save to IndexedDB
-notesStore.subscribe(async (notes) => {
-  if (!isBrowser) return;
-  try {
-    // Replace all notes with current store content
-    await (db as any).notes.clear();
-    if (notes.length > 0) {
-      await (db as any).notes.bulkAdd(notes);
-      // Trigger sync if online
-      if (navigator.onLine) {
-        import('$lib/services/sync').then(({ syncUnsyncedItems }) => syncUnsyncedItems());
-      }
-    }
-  } catch (error) {
-    console.error('Failed to save notes to IndexedDB:', error);
-  }
-});
+
+export async function addNote(content: string, tags: string[] = []) {
+	if (!isBrowser) return;
+	const note: Note = {
+		id: crypto.randomUUID(),
+		content,
+		tags,
+		timestamp: new Date().toISOString(),
+		synced: false
+	};
+	try {
+		await (db as any).notes.add(note);
+		notesStore.update((notes) => [note, ...notes]);
+		if (navigator.onLine) {
+			import('$lib/services/sync').then(({ syncUnsyncedItems }) => {
+				syncUnsyncedItems().catch((error) => {
+					console.error('Failed to sync note:', error);
+				});
+			});
+		}
+	} catch (error) {
+		console.error('Failed to add note:', error);
+	}
+}
+
 
 // React to retention settings changes
 settingsStore.subscribe((s) => {
-  if (!isBrowser) return;
-  // Purge in background; no await
-  purgeByRetention(s.retentionDays ?? null);
+
+	if (!isBrowser) return;
+	// Purge in background; no await
+	purgeByRetention(s.retentionDays ?? null);
 });
 
 // Initialize on module load

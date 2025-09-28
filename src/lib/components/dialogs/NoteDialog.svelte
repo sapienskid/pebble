@@ -5,14 +5,13 @@
   import { Input } from "$lib/components/ui/input";
   import { Label } from "$lib/components/ui/label";
   import { v4 as uuidv4 } from 'uuid';
-  import { notesStore } from '$lib/stores/notes';
+  import { addNote } from '$lib/stores/notes';
   import { HelpCircle, Wifi, Lightbulb } from '@lucide/svelte';
 
   export let open: boolean = false;
 
   let content = '';
   let selectedTag: string | null = null;
-  let showFinalEdit = false;
 
   const availableTags = ['queries', 'thought', 'idea'];
 
@@ -32,18 +31,13 @@
   }
 
 
-  function handleFinalConfirm(finalContent: string, finalTag: string | null) {
+  async function handleFinalConfirm(finalContent: string, finalTag: string | null) {
     const defaultTag = 'thoughts';
     const tags = finalTag ? [finalTag] : [defaultTag];
-    notesStore.update(list => [...list, { id: uuidv4(), content: finalContent, tags, timestamp: new Date().toISOString(), synced: false }]);
+    await addNote(finalContent, tags);
     content = '';
     selectedTag = null;
-    showFinalEdit = false;
     open = false;
-  }
-
-  function handleFinalCancel() {
-    showFinalEdit = false;
   }
 </script>
 

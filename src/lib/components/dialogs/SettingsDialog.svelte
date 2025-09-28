@@ -4,6 +4,7 @@
   import { notesStore } from "$lib/stores/notes";
   import { Button } from "$lib/components/ui/button";
   import { Label } from "$lib/components/ui/label";
+  import { Input } from "$lib/components/ui/input";
   import { Switch } from "$lib/components/ui/switch";
   import { Separator } from "$lib/components/ui/separator";
   import {
@@ -23,6 +24,11 @@
 
   let currentTheme: "light" | "dark" | "device";
   themeStore.subscribe((value) => (currentTheme = value));
+
+  let apiKey = $settingsStore.syncToken || '';
+  $: if (apiKey !== $settingsStore.syncToken) {
+    settingsStore.update((s) => ({ ...s, syncToken: apiKey }));
+  }
 
   function saveTheme() {
     themeStore.set(currentTheme);
@@ -116,6 +122,16 @@
             ariaLabel="Auto-sync on app start"
           />
           <Label>Auto-sync on app start</Label>
+        </div>
+        <div class="space-y-2">
+          <Label for="apiKey">API Key</Label>
+          <Input
+            id="apiKey"
+            type="password"
+            placeholder="Enter your sync API key"
+            bind:value={apiKey}
+          />
+          <p class="text-xs text-muted-foreground">Required for cloud sync. Get this from your Cloudflare dashboard.</p>
         </div>
       </div>
 
