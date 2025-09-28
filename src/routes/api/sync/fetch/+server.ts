@@ -1,6 +1,18 @@
 import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 
+const CORS_HEADERS = {
+  'Access-Control-Allow-Origin': 'app://obsidian.md',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, CF-Access-Client-Id, CF-Access-Client-Secret',
+};
+
+export const OPTIONS: RequestHandler = async () => {
+  return new Response(null, {
+    headers: CORS_HEADERS
+  });
+};
+
 export const GET: RequestHandler = async ({ platform, request, url }) => {
 	if (!platform) {
 		throw error(500, 'Platform not available');
@@ -36,9 +48,9 @@ export const GET: RequestHandler = async ({ platform, request, url }) => {
 			return item;
 		});
 
-		return json({ items: normalized });
+		return json({ items: normalized }, { headers: CORS_HEADERS });
 	} catch (err) {
 		console.error('Error fetching sync items:', err);
-		return json({ message: (err as any).message || 'Failed to fetch sync items' }, { status: 500 });
+		return json({ message: (err as any).message || 'Failed to fetch sync items' }, { status: 500, headers: CORS_HEADERS });
 	}
 };

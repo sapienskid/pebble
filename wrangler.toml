@@ -1,15 +1,19 @@
-name = "capture"
+# Top-level configuration (used by `wrangler dev`)
+name = "capture-dev"
 main = ".svelte-kit/cloudflare/_worker.js"
 compatibility_date = "2025-09-24"
 
-[[kv_namespaces]]
-binding = "PEBBLE_SYNC_KV"
-id = "8d1dfdac670a438a833da211262bcb90"
+[vars]
+# You can define development-specific variables here if needed
 
 [assets]
 directory = ".svelte-kit/cloudflare/assets"
 binding = "ASSETS"
 
-# wrangler.toml (wrangler v3.88.0^)
-[observability.logs]
-enabled = true
+# --- Production Environment ---
+[env.production]
+name = "capture" # This will be the name of your production worker
+
+[[env.production.kv_namespaces]]
+binding = "PEBBLE_SYNC_KV"
+id = "8d1dfdac670a438a833da211262bcb90"
