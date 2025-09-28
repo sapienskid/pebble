@@ -36,7 +36,8 @@ export const GET: RequestHandler = async ({ platform, request }) => {
         return json({ message: 'Server environment not available' }, { status: 500 });
     }
 
-    const { PEBBLE_SYNC_KV: kv, API_KEY: apiKey } = platform.env;
+    const { PEBBLE_SYNC_KV: kv } = platform.env;
+    const apiKey = (platform.env as any).API_KEY;
 
     if (!kv) {
         console.error('KV store is not configured in the environment.');

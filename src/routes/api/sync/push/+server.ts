@@ -8,7 +8,8 @@ export const POST: RequestHandler = async ({ platform, request }) => {
 		throw error(500, 'Platform not available');
 	}
 
-	const { PEBBLE_SYNC_KV: kv, API_KEY: apiKey } = platform.env;
+	const { PEBBLE_SYNC_KV: kv } = platform.env;
+	const apiKey = (platform.env as any).API_KEY;
 
 	if (!kv) {
 		throw error(500, 'KV not configured');
