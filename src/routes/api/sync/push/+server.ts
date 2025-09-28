@@ -1,18 +1,6 @@
 import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 
-const CORS_HEADERS = {
-  'Access-Control-Allow-Origin': 'app://obsidian.md',
-  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, CF-Access-Client-Id, CF-Access-Client-Secret',
-};
-
-export const OPTIONS: RequestHandler = async () => {
-  return new Response(null, {
-    headers: CORS_HEADERS
-  });
-};
-
 export const POST: RequestHandler = async ({ platform, request }) => {
 	if (!platform) {
 		throw error(500, 'Platform not available');
@@ -60,7 +48,7 @@ export const POST: RequestHandler = async ({ platform, request }) => {
 
 		await kv.put(syncKey, JSON.stringify(syncData), { expirationTtl: ttl });
 
-		return json({ success: true, syncId }, { headers: CORS_HEADERS });
+		return json({ success: true, syncId });
 	} catch (err) {
 		console.error('Error pushing sync item:', err);
 		throw error(500, 'Failed to push sync item');

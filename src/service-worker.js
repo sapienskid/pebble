@@ -43,6 +43,18 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
+	// Handle preflight (OPTIONS) requests for CORS
+	if (event.request.method === 'OPTIONS') {
+		const headers = {
+			'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, PATCH, OPTIONS',
+			'Access-Control-Allow-Headers': 'Content-Type, Authorization, CF-Access-Client-Id, CF-Access-Client-Secret',
+			'Access-Control-Allow-Origin': 'app://obsidian.md',
+			'Vary': 'Origin'
+		};
+		event.respondWith(new Response(null, { status: 204, headers }));
+		return;
+	}
+
 	// ignore POST requests etc
 	if (event.request.method !== 'GET') return;
 
@@ -70,7 +82,8 @@ self.addEventListener('fetch', (event) => {
 				throw new Error('invalid response from fetch');
 			}
 
-			if (response.status === 200) {
+			// Do not cache API responses
+			if (response.status === 200 && !url.pathname.startsWith('/api')) {
 				cache.put(event.request, response.clone());
 			}
 
