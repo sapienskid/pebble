@@ -109,119 +109,90 @@ class PebbleSyncPlugin extends Plugin {
       .replace(/{{tags}}/gi, tagString);
   }
 
-  async importNow(force = false) {
+// Update the importNow method in your plugin:
+async importNow(force = false) {
     const s = this.settings;
     if (!s.apiUrl) {
-      new Notice('Pebble Sync: API URL is required.');
-      return;
+        new Notice('Pebble Sync: API URL is required.');
+        return;
     }
     if (!s.cfAccessClientId || !s.cfAccessClientSecret) {
         new Notice('Pebble Sync: Cloudflare Access credentials are required.');
         return;
     }
     if (!s.atomicNotesEnabled) {
-      new Notice('Pebble Sync: Atomic notes creation is disabled.');
-      return;
+        new Notice('Pebble Sync: Atomic notes creation is disabled.');
+        return;
     }
 
     let syncNotice = new Notice('Pebble Sync: Fetching notes...', 0);
     let importFailed = false;
 
     try {
-      const resp = await fetch(`${s.apiUrl.replace(/\/+$/, '')}/api/sync/fetch`, {
-        method: 'GET',
-        headers: {
-            'CF-Access-Client-Id': s.cfAccessClientId,
-            'CF-Access-Client-Secret': s.cfAccessClientSecret,
-        },
-      });
+        // Add explicit CORS mode and credentials
+        const resp = await fetch(`${s.apiUrl.replace(/\/+$/, '')}/api/sync/fetch`, {
+            method: 'GET',
+            mode: 'cors', // Explicitly set CORS mode
+            credentials: 'include', // Include credentials
+            headers: {
+                'Content-Type': 'application/json',
+                'CF-Access-Client-Id': s.cfAccessClientId,
+                'CF-Access-Client-Secret': s.cfAccessClientSecret,
+                // Add origin header explicitly
+                'Origin': 'app://obsidian.md'
+            },
+        });
 
-      if (!resp.ok) {
-        const errorText = await resp.text();
-        throw new Error(`API fetch failed with status ${resp.status}: ${errorText}`);
-      }
-
-      const json = await resp.json();
-      const notes = (json.items || []).filter(it => it?.type === 'note' && typeof it.markdown === 'string');
-
-      if (notes.length === 0) {
-        syncNotice.setMessage('Pebble Sync: No new notes to import.');
-        return;
-      }
-
-      syncNotice.setMessage(`Pebble Sync: Importing ${notes.length} notes...`);
-      await this.ensureFolder(s.atomicNotesFolder);
-
-      const triggerTags = new Set((s.atomicNotesTags || '').split(',').map(t => t.trim().toLowerCase()).filter(Boolean));
-      let createdCount = 0, overwrittenCount = 0;
-
-      for (const note of notes) {
-        const noteTimestamp = moment(note.createdAt || new Date());
-
-        const itemTags = new Set((note.tags || []).map(t => t.replace(/^#/, '').trim().toLowerCase()));
-        const matchingTag = [...triggerTags].find(trigger => itemTags.has(trigger));
-
-        let baseName;
-        if (matchingTag) {
-          baseName = matchingTag.charAt(0).toUpperCase() + matchingTag.slice(1);
-        } else {
-          if (note.tags && note.tags.length > 0) {
-            baseName = (note.markdown.split('\n')[0] || `Pebble Note`).substring(0, 50).replace(/[\\/:"*?<>|]/g, '-').trim();
-          } else {
-            baseName = 'Atomic';
-          }
+        // Check if the response is ok before trying to parse JSON
+        if (!resp.ok) {
+            const errorText = await resp.text();
+            console.error('API Response:', resp.status, resp.statusText, errorText);
+            throw new Error(`API fetch failed with status ${resp.status}: ${errorText}`);
         }
 
-        const fileName = normalizePath(`${s.atomicNotesFolder}/${baseName} ${noteTimestamp.format('dddd, MMMM Do YYYY HH-mm')}.md`);
-
-        const fileExists = this.app.vault.getAbstractFileByPath(fileName);
-
-        if (fileExists && !s.overwriteExisting && !force) continue;
-
-        const templateData = {
-          content: note.markdown,
-          date: noteTimestamp.format('YYYY-MM-DD'),
-          time: noteTimestamp.format('HH:mm'),
-          fullDateTime: noteTimestamp.format('YYYY-MM-DD HH:mm'),
-          tags: note.tags || []
-        };
-        const content = await this.processTemplate(s.atomicNotesTemplate, templateData);
-
-        let atomicFile;
-        if (fileExists instanceof TFile) {
-          await this.app.vault.modify(fileExists, content);
-          atomicFile = fileExists;
-          overwrittenCount++;
-        } else {
-          atomicFile = await this.app.vault.create(fileName, content);
-          createdCount++;
+        const contentType = resp.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+            const text = await resp.text();
+            console.error('Non-JSON response:', text);
+            throw new Error('API returned non-JSON response');
         }
 
-        if (s.linkBackToDailyNote) {
-          await this.linkToDailyNote(atomicFile, noteTimestamp);
+        const json = await resp.json();
+        const notes = (json.items || []).filter(it => it?.type === 'note' && typeof it.markdown === 'string');
+
+        if (notes.length === 0) {
+            syncNotice.setMessage('Pebble Sync: No new notes to import.');
+            return;
         }
-      }
 
-      let message = 'Pebble Sync: Import complete.';
-      const details = [];
-      if (createdCount > 0) details.push(`Created ${createdCount} new notes.`);
-      if (overwrittenCount > 0) details.push(`Overwrote ${overwrittenCount} notes.`);
-      if (createdCount === 0 && overwrittenCount === 0) {
-        message = 'Pebble Sync: Nothing new to import.';
-      }
+        // Rest of your existing logic...
+        syncNotice.setMessage(`Pebble Sync: Importing ${notes.length} notes...`);
+        await this.ensureFolder(s.atomicNotesFolder);
 
-      syncNotice.setMessage(message + (details.length > 0 ? ' ' + details.join(' ') : ''));
+        const triggerTags = new Set((s.atomicNotesTags || '').split(',').map(t => t.trim().toLowerCase()).filter(Boolean));
+        let createdCount = 0, overwrittenCount = 0;
+
+        // ... rest of your existing note processing logic
 
     } catch (e) {
-      console.error('Pebble Sync import error', e);
-      syncNotice.setMessage('Pebble Sync: Import failed. See console for details.');
-      importFailed = true;
+        console.error('Pebble Sync import error', e);
+        
+        // More detailed error messages
+        if (e.message.includes('CORS')) {
+            syncNotice.setMessage('Pebble Sync: CORS error. Check server configuration.');
+        } else if (e.message.includes('Failed to fetch')) {
+            syncNotice.setMessage('Pebble Sync: Network error. Check URL and credentials.');
+        } else {
+            syncNotice.setMessage(`Pebble Sync: Import failed - ${e.message}`);
+        }
+        
+        importFailed = true;
     } finally {
-      if (!importFailed) {
-        setTimeout(() => syncNotice.hide(), 5000);
-      }
+        if (!importFailed) {
+            setTimeout(() => syncNotice.hide(), 5000);
+        }
     }
-  }
+}
 
   async linkToDailyNote(fileToLink, dateMoment) {
     const cfg = this.getDailyConfig();
