@@ -43,17 +43,8 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-	// Handle preflight (OPTIONS) requests for CORS
-	if (event.request.method === 'OPTIONS') {
-		const headers = {
-			'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, PATCH, OPTIONS',
-			'Access-Control-Allow-Headers': 'Content-Type, Authorization, CF-Access-Client-Id, CF-Access-Client-Secret',
-			'Access-Control-Allow-Origin': 'app://obsidian.md',
-			'Vary': 'Origin'
-		};
-		event.respondWith(new Response(null, { status: 204, headers }));
-		return;
-	}
+	// Skip OPTIONS handling in service worker - let it pass through to hooks.server.ts
+	// This prevents conflicts with Cloudflare Access
 
 	// ignore POST requests etc
 	if (event.request.method !== 'GET') return;

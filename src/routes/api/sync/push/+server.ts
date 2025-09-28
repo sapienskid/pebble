@@ -1,16 +1,28 @@
 import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 
+// CORS is now handled globally in hooks.server.ts
+
 export const POST: RequestHandler = async ({ platform, request }) => {
 	if (!platform) {
 		throw error(500, 'Platform not available');
 	}
 
-	const kv = platform.env.PEBBLE_SYNC_KV;
-	const masterSecret = platform.env.MASTER_HMAC_SECRET;
+	const { PEBBLE_SYNC_KV: kv, API_KEY: apiKey } = platform.env;
 
-	if (!kv || !masterSecret) {
-		throw error(500, 'KV or master secret not configured');
+	if (!kv) {
+		throw error(500, 'KV not configured');
+	}
+
+	// Check API key authentication
+	const providedKey = request.headers.get('X-API-Key') || request.headers.get('Authorization')?.replace('Bearer ', '');
+	
+	if (!providedKey) {
+		throw error(401, 'API key required');
+	}
+	
+	if (providedKey !== apiKey) {
+		throw error(401, 'Invalid API key');
 	}
 
 	try {
@@ -48,9 +60,11 @@ export const POST: RequestHandler = async ({ platform, request }) => {
 
 		await kv.put(syncKey, JSON.stringify(syncData), { expirationTtl: ttl });
 
-		return json({ success: true, syncId });
+	// CORS headers are handled in hooks.server.ts
+	return json({ success: true, syncId });
 	} catch (err) {
-		console.error('Error pushing sync item:', err);
-		throw error(500, 'Failed to push sync item');
+	console.error('Error pushing sync item:', err);
+	// CORS headers are handled in hooks.server.ts
+	return json({ message: 'Failed to push sync item' }, { status: 500 });
 	}
 };

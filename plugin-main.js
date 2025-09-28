@@ -3,9 +3,8 @@ const { Plugin, Notice, normalizePath, moment, Setting, TFile, PluginSettingTab 
 
 const DEFAULT_SETTINGS = {
     // --- General Settings ---
-    apiUrl: 'https://capture.savinpokharel0.workers.dev',
-    cfAccessClientId: '',
-    cfAccessClientSecret: '',
+    apiUrl: 'https://pebble.savinpokharel.workers.dev',
+    apiKey: '',
 
     // --- Automation ---
     autoRunOnStartup: false,
@@ -115,8 +114,8 @@ class PebbleSyncPlugin extends Plugin {
             new Notice('Pebble Sync: API URL is required.');
             return;
         }
-        if (!s.cfAccessClientId || !s.cfAccessClientSecret) {
-            new Notice('Pebble Sync: Cloudflare Access credentials are required.');
+        if (!s.apiKey) {
+            new Notice('Pebble Sync: API key is required.');
             return;
         }
         if (!s.atomicNotesEnabled) {
@@ -138,13 +137,10 @@ class PebbleSyncPlugin extends Plugin {
             const resp = await fetch(`${apiUrl.replace(/\/+$/, '')}/api/sync/fetch`, {
                 method: 'GET',
                 mode: 'cors',
-                credentials: 'omit', // CHANGED from 'include' to 'omit'
+                credentials: 'omit',
                 headers: {
                     'Content-Type': 'application/json',
-                    'CF-Access-Client-Id': s.cfAccessClientId,
-                    'CF-Access-Client-Secret': s.cfAccessClientSecret,
-                    // Add Origin header explicitly
-                    'Origin': 'app://obsidian.md'
+                    'X-API-Key': s.apiKey
                 },
             });
 
@@ -335,25 +331,14 @@ class PebbleSyncSettingTab extends PluginSettingTab {
         new Setting(containerEl).setName('API URL').addText(t => t.setPlaceholder('https://pebble...').setValue(this.plugin.settings.apiUrl).onChange(async v => { this.plugin.settings.apiUrl = v.trim(); await this.plugin.saveSettings(); }));
 
         new Setting(containerEl)
-            .setName('Cloudflare Access Client ID')
-            .setDesc('Client ID for Cloudflare Access service authentication.')
-            .addText(text => text
-                .setPlaceholder('Enter your client ID')
-                .setValue(this.plugin.settings.cfAccessClientId)
-                .onChange(async (value) => {
-                    this.plugin.settings.cfAccessClientId = value.trim();
-                    await this.plugin.saveSettings();
-                }));
-
-        new Setting(containerEl)
-            .setName('Cloudflare Access Client Secret')
-            .setDesc('Client Secret for Cloudflare Access service authentication.')
+            .setName('API Key')
+            .setDesc('API key for authenticating with the Pebble sync service.')
             .addText(text => {
                 text
-                    .setPlaceholder('Enter your client secret')
-                    .setValue(this.plugin.settings.cfAccessClientSecret)
+                    .setPlaceholder('Enter your API key')
+                    .setValue(this.plugin.settings.apiKey)
                     .onChange(async (value) => {
-                        this.plugin.settings.cfAccessClientSecret = value.trim();
+                        this.plugin.settings.apiKey = value.trim();
                         await this.plugin.saveSettings();
                     });
                 text.inputEl.type = 'password';

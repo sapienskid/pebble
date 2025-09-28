@@ -1,74 +1,67 @@
-import type { Handle } from '@sveltejs/kit';
+import { json, type Handle } from '@sveltejs/kit';
 
-const corsHeaders = (origin: string | null) => {
-    // Allow specific origins including Obsidian
-    const allowedOrigins = [
-        'app://obsidian.md',
-        'capacitor://localhost',
-        'http://localhost:3000',
-        'https://capture.savinpokharel0.workers.dev' // Add your actual domain
-    ];
+// Define the origins that are explicitly allowed to make requests.
+const allowedOrigins = [
+    'app://obsidian.md',
+];
 
-    const corsOrigin = origin && allowedOrigins.includes(origin) ? origin : '*';
-
-    return {
-        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, PATCH, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization, CF-Access-Client-Id, CF-Access-Client-Secret, Origin, X-Requested-With',
-        'Access-Control-Allow-Origin': corsOrigin,
-        'Access-Control-Allow-Credentials': 'false', // Important: set to false when using service auth
-        'Access-Control-Max-Age': '86400',
-        'Vary': 'Origin'
-    };
+/**
+ * A centralized function to generate the correct CORS headers.
+ * Updated for Cloudflare Access compatibility.
+ */
+const getCorsHeaders = (origin: string | null) => {
+    const headers = new Headers();
+    
+    // Always allow obsidian app requests
+    if (origin && origin.startsWith('app://obsidian.md')) {
+        headers.set('Access-Control-Allow-Origin', origin);
+    } else {
+        // For preflight requests without origin, allow obsidian
+        headers.set('Access-Control-Allow-Origin', 'app://obsidian.md');
+    }
+    
+    // Critical: Set the Vary header correctly for Cloudflare Access
+    headers.set('Vary', 'Origin, CF-Access-Client-Id, CF-Access-Client-Secret');
+    
+    headers.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    headers.set('Access-Control-Allow-Headers', 'Content-Type, X-API-Key, Authorization, Origin, Accept');
+    headers.set('Access-Control-Allow-Credentials', 'false');
+    headers.set('Access-Control-Max-Age', '3600'); // Reduce cache time for debugging
+    
+    return headers;
 };
 
 export const handle: Handle = async ({ event, resolve }) => {
     const origin = event.request.headers.get('Origin');
-    const method = event.request.method;
-
-    console.log(`${method} ${event.url.pathname} - Origin: ${origin}`);
-
-    // Handle preflight (OPTIONS) requests immediately
-    if (method === 'OPTIONS') {
-        console.log('Handling OPTIONS preflight request');
+    
+    // --- STEP 1: Handle the CORS Preflight (The Front Door) ---
+    // This is critical for Cloudflare Access + CORS compatibility
+    if (event.request.method === 'OPTIONS') {
+        console.log('Handling OPTIONS preflight request', { origin, url: event.url.pathname });
         return new Response(null, {
-            status: 204,
-            headers: corsHeaders(origin)
+            status: 200, // Changed from 204 to 200 for better compatibility
+            headers: getCorsHeaders(origin),
         });
     }
 
-    // For API routes, check Cloudflare Access headers
+    // --- STEP 2: Handle the Actual Request ---
+    // For API routes, let Cloudflare Access handle authentication at the edge
+    // We don't need to check CF-Access headers here since CF Access validates them
     if (event.url.pathname.startsWith('/api/')) {
-        const clientId = event.request.headers.get('CF-Access-Client-Id');
-        const clientSecret = event.request.headers.get('CF-Access-Client-Secret');
-        
-        if (!clientId || !clientSecret) {
-            console.log('Missing Cloudflare Access headers');
-            return new Response('Missing authentication headers', {
-                status: 401,
-                headers: corsHeaders(origin)
-            });
-        }
-        
-        // Here you would validate the service token against Cloudflare
-        // For now, we'll just log it
-        console.log('Service auth headers present:', { clientId: clientId.substring(0, 8) + '...' });
-    }
-
-    // Handle the actual request
-    let response;
-    try {
-        response = await resolve(event);
-    } catch (error) {
-        console.error('Error in resolve:', error);
-        return new Response('Internal Server Error', {
-            status: 500,
-            headers: corsHeaders(origin)
+        console.log('Processing API request', { 
+            method: event.request.method, 
+            path: event.url.pathname,
+            origin: origin,
+            hasClientId: !!event.request.headers.get('CF-Access-Client-Id')
         });
     }
+
+    // Process the request
+    const response = await resolve(event);
 
     // Add CORS headers to all responses
-    const headers = corsHeaders(origin);
-    for (const [key, value] of Object.entries(headers)) {
+    const corsHeaders = getCorsHeaders(origin);
+    for (const [key, value] of corsHeaders.entries()) {
         response.headers.set(key, value);
     }
 
