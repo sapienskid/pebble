@@ -19,6 +19,9 @@ async function purgeByRetention(retentionDays: number | null) {
     const allNotes: Note[] = await (db as any).notes.toArray();
     // Safety: never purge unsynced notes
     const kept = allNotes.filter(n => n.synced === false || !isExpired(n.timestamp, retentionDays));
+    // Sort by timestamp descending (newest first)
+    kept.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    
     if (kept.length !== allNotes.length) {
       // Persist filtered notes and update store
       await (db as any).notes.clear();
@@ -27,8 +30,8 @@ async function purgeByRetention(retentionDays: number | null) {
       }
       notesStore.set(kept);
     } else {
-      // Ensure store has current value
-      notesStore.set(allNotes);
+      // Ensure store has current value (sorted)
+      notesStore.set(kept);
     }
   } catch (error) {
     console.error('Failed to purge notes by retention:', error);

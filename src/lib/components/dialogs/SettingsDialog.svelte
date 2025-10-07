@@ -25,9 +25,13 @@
   let currentTheme: "light" | "dark" | "device";
   themeStore.subscribe((value) => (currentTheme = value));
 
-  let apiKey = $settingsStore.syncToken || '';
-  $: if (apiKey !== $settingsStore.syncToken) {
-    settingsStore.update((s) => ({ ...s, syncToken: apiKey }));
+  // Make apiKey reactive to store changes
+  let apiKey = '';
+  $: apiKey = $settingsStore.syncToken || '';
+  
+  // Update store when user types
+  function updateApiKey(value: string) {
+    settingsStore.update((s) => ({ ...s, syncToken: value }));
   }
 
   function saveTheme() {
@@ -129,7 +133,8 @@
             id="apiKey"
             type="password"
             placeholder="Enter your sync API key"
-            bind:value={apiKey}
+            value={apiKey}
+            oninput={(e) => updateApiKey(e.currentTarget.value)}
           />
           <p class="text-xs text-muted-foreground">Required for cloud sync. Get this from your Cloudflare dashboard.</p>
         </div>

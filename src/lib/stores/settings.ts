@@ -6,6 +6,7 @@ import { db, type Settings } from '../db';
 const defaultSettings: Settings = {
   id: 'settings',
   syncEnabled: false,
+  syncToken: '',
   autoSyncOnStart: false,
   retentionDays: null, // keep forever by default
   syncRetentionDays: 7,
