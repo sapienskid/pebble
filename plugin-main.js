@@ -40,10 +40,12 @@ class PebbleSyncPlugin extends Plugin {
     async onload() {
         await this.loadSettings();
 
+        this.addStyle(await this.app.vault.adapter.read('styles.css'));
+
         this.addRibbonIcon('sync', 'Pebble Sync: Import new notes', () => this.importNow(false));
 
-        this.addCommand({ id: 'pebble-sync-import-now', name: 'Pebble Sync: Import new notes', callback: () => this.importNow(false) });
-        this.addCommand({ id: 'pebble-sync-force-import', name: 'Pebble Sync: Force re-import (overwrite existing)', callback: () => this.importNow(true) });
+        this.addCommand({ id: 'pebble-sync-import-now', name: 'Import new notes', callback: () => this.importNow(false) });
+        this.addCommand({ id: 'pebble-sync-force-import', name: 'Force re-import (overwrite existing)', callback: () => this.importNow(true) });
 
         this.addSettingTab(new PebbleSyncSettingTab(this.app, this));
 
@@ -359,8 +361,7 @@ class PebbleSyncSettingTab extends PluginSettingTab {
             new Setting(containerEl).setName('Atomic note template').setDesc('Available variables: {{content}}, {{date}}, {{time}}, {{fullDateTime}}, {{tags}} (comma-separated string).').addTextArea(text => {
                 text.setValue(this.plugin.settings.atomicNotesTemplate).onChange(async (v) => { this.plugin.settings.atomicNotesTemplate = v; await this.plugin.saveSettings(); });
                 text.inputEl.rows = 8;
-                text.inputEl.style.width = '100%';
-                text.inputEl.style.fontFamily = 'monospace';
+                text.inputEl.classList.add('pebble-template-textarea');
             });
             new Setting(containerEl).setName('Overwrite on force re-import').setDesc('Enable this to allow the "Force re-import" command to overwrite existing notes with the same name.').addToggle(t => t.setValue(this.plugin.settings.overwriteExisting).onChange(async v => { this.plugin.settings.overwriteExisting = v; await this.plugin.saveSettings(); }));
         }
