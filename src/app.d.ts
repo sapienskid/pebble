@@ -9,7 +9,7 @@ declare global {
 		interface Platform extends Record<string, any> {
 			env: {
 				PEBBLE_SYNC_KV: KVNamespace;
-				MASTER_HMAC_SECRET: string;
+				API_KEY: string;
 			};
 		}
 	}
