@@ -30,7 +30,7 @@
   }
 </script>
 
-<header class="sticky top-0 bg-background flex items-center justify-between p-4">
+<header class="sticky top-0 z-40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-b border-border/50 flex items-center justify-between p-4">
   <div class="flex items-center gap-3">
     <img src={logoUrl} alt="Logo" class="w-32 h-auto dark:invert" />
     <div class="w-2 h-2 rounded-full {isOnline ? 'bg-green-500' : 'bg-red-500'}"></div>

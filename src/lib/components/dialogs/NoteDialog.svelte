@@ -1,16 +1,20 @@
 <script lang="ts">
-  import { tick } from 'svelte';
+  import { onDestroy, tick } from 'svelte';
   import { Button } from "$lib/components/ui/button";
   import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "$lib/components/ui/dialog";
   import { Textarea } from "$lib/components/ui/textarea";
   import { Label } from "$lib/components/ui/label";
-  import { addNote } from '$lib/stores/notes';
+  import { addNote, deleteNote } from '$lib/stores/notes';
 
   export let open: boolean = false;
 
   let content = '';
   let isSubmitting = false;
   let contentRef: HTMLTextAreaElement | null = null;
+  let undoNoteId: string | null = null;
+  let undoTimer: ReturnType<typeof setTimeout> | null = null;
+
+  const UNDO_WINDOW_MS = 5000;
 
   function normalizeTag(rawTag: string): string {
     return rawTag
@@ -38,6 +42,33 @@
     });
   }
 
+  onDestroy(() => {
+    clearUndoTimer();
+  });
+
+  function clearUndoTimer() {
+    if (!undoTimer) return;
+    clearTimeout(undoTimer);
+    undoTimer = null;
+  }
+
+  function startUndoWindow(noteId: string) {
+    clearUndoTimer();
+    undoNoteId = noteId;
+    undoTimer = setTimeout(() => {
+      undoNoteId = null;
+      undoTimer = null;
+    }, UNDO_WINDOW_MS);
+  }
+
+  async function handleUndo() {
+    if (!undoNoteId) return;
+    const noteId = undoNoteId;
+    clearUndoTimer();
+    undoNoteId = null;
+    await deleteNote(noteId);
+  }
+
   function handleContentKeydown(event: KeyboardEvent) {
     if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
       event.preventDefault();
@@ -48,7 +79,9 @@
   async function handleFinalConfirm(finalContent: string, tags: string[]) {
     const defaultTag = 'thoughts';
     const tagsToSave = tags.length > 0 ? tags : [defaultTag];
-    await addNote(finalContent, tagsToSave);
+    const createdNote = await addNote(finalContent, tagsToSave, { syncDelayMs: UNDO_WINDOW_MS + 500 });
+    if (!createdNote) return;
+    startUndoWindow(createdNote.id);
     content = '';
     open = false;
   }
@@ -110,3 +143,18 @@
     </DialogFooter>
   </DialogContent>
 </Dialog>
+
+{#if undoNoteId}
+  <div class="fixed bottom-24 left-1/2 z-50 w-[calc(100%-1.5rem)] max-w-sm -translate-x-1/2 rounded-lg border border-border bg-background/95 px-4 py-3 shadow-lg backdrop-blur">
+    <div class="flex items-center justify-between gap-3">
+      <p class="text-sm text-foreground">Note created.</p>
+      <button
+        type="button"
+        class="text-sm font-semibold text-primary hover:text-primary/80"
+        onclick={handleUndo}
+      >
+        Undo
+      </button>
+    </div>
+  </div>
+{/if}

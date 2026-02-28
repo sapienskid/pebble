@@ -51,8 +51,12 @@ async function initNotesStore() {
 }
 
 
-export async function addNote(content: string, tags: string[] = []) {
-	if (!isBrowser) return;
+type AddNoteOptions = {
+  syncDelayMs?: number;
+};
+
+export async function addNote(content: string, tags: string[] = [], options: AddNoteOptions = {}) {
+	if (!isBrowser) return null;
 	const note: Note = {
 		id: crypto.randomUUID(),
 		content,
@@ -64,15 +68,37 @@ export async function addNote(content: string, tags: string[] = []) {
 		await (db as any).notes.add(note);
 		notesStore.update((notes) => [note, ...notes]);
 		if (navigator.onLine) {
-			import('$lib/services/sync').then(({ syncUnsyncedItems }) => {
-				syncUnsyncedItems().catch((error) => {
-					console.error('Failed to sync note:', error);
-				});
-			});
+      const syncDelayMs = Math.max(0, options.syncDelayMs ?? 0);
+      const triggerSync = () => {
+        import('$lib/services/sync').then(({ syncUnsyncedItems }) => {
+          syncUnsyncedItems().catch((error) => {
+            console.error('Failed to sync note:', error);
+          });
+        });
+      };
+      if (syncDelayMs > 0) {
+        window.setTimeout(triggerSync, syncDelayMs);
+      } else {
+        triggerSync();
+      }
 		}
+    return note;
 	} catch (error) {
 		console.error('Failed to add note:', error);
+    return null;
 	}
+}
+
+export async function deleteNote(noteId: string) {
+  if (!isBrowser) return false;
+  try {
+    await (db as any).notes.delete(noteId);
+    notesStore.update((notes) => notes.filter((note) => note.id !== noteId));
+    return true;
+  } catch (error) {
+    console.error('Failed to delete note:', error);
+    return false;
+  }
 }
 
 
