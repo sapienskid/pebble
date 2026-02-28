@@ -1,43 +1,66 @@
 <script lang="ts">
+  import { tick } from 'svelte';
   import { Button } from "$lib/components/ui/button";
-  import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogClose, DialogFooter } from "$lib/components/ui/dialog";
+  import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "$lib/components/ui/dialog";
   import { Textarea } from "$lib/components/ui/textarea";
-  import { Input } from "$lib/components/ui/input";
   import { Label } from "$lib/components/ui/label";
-  import { v4 as uuidv4 } from 'uuid';
   import { addNote } from '$lib/stores/notes';
-  import { HelpCircle, Wifi, Lightbulb } from '@lucide/svelte';
 
   export let open: boolean = false;
 
   let content = '';
-  let selectedTag: string | null = null;
+  let isSubmitting = false;
+  let contentRef: HTMLTextAreaElement | null = null;
 
-  const availableTags = ['queries', 'thought', 'idea'];
+  function normalizeTag(rawTag: string): string {
+    return rawTag
+      .trim()
+      .replace(/^#+/, '')
+      .replace(/[^a-zA-Z0-9_-]/g, '')
+      .toLowerCase();
+  }
 
-  function getTagComponent(tag: string) {
-    switch (tag) {
-      case 'queries': return HelpCircle;
-      case 'thought': return Wifi;
-      case 'idea': return Lightbulb;
-      default: return Wifi;
-    }
+  function uniqueTags(tags: string[]): string[] {
+    return [...new Set(tags.filter(Boolean))];
+  }
+
+  function extractHashtags(input: string): string[] {
+    const matches = input.match(/#[a-zA-Z0-9_-]+/g) ?? [];
+    return uniqueTags(matches.map(normalizeTag));
   }
 
   $: isValid = content.trim().length > 0 && content.length <= 500;
+  $: finalTags = extractHashtags(content);
 
-  function selectTag(tag: string) {
-    selectedTag = selectedTag === tag ? null : tag;
+  $: if (open) {
+    tick().then(() => {
+      contentRef?.focus();
+    });
   }
 
+  function handleContentKeydown(event: KeyboardEvent) {
+    if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
+      event.preventDefault();
+      void handleCreate();
+    }
+  }
 
-  async function handleFinalConfirm(finalContent: string, finalTag: string | null) {
+  async function handleFinalConfirm(finalContent: string, tags: string[]) {
     const defaultTag = 'thoughts';
-    const tags = finalTag ? [finalTag] : [defaultTag];
-    await addNote(finalContent, tags);
+    const tagsToSave = tags.length > 0 ? tags : [defaultTag];
+    await addNote(finalContent, tagsToSave);
     content = '';
-    selectedTag = null;
     open = false;
+  }
+
+  async function handleCreate() {
+    if (!isValid || isSubmitting) return;
+    isSubmitting = true;
+    try {
+      await handleFinalConfirm(content, finalTags);
+    } finally {
+      isSubmitting = false;
+    }
   }
 </script>
 
@@ -45,51 +68,45 @@
   <DialogTrigger>
     <slot />
   </DialogTrigger>
-  <DialogContent class="sm:max-w-md max-h-[85vh] overflow-y-auto translate-y-[-4vh] md:translate-y-0">
-    <DialogHeader>
+  <DialogContent class="flex w-[calc(100%-1.5rem)] max-w-md max-h-[calc(100dvh-1.5rem)] flex-col overflow-hidden p-0 gap-0">
+    <DialogHeader class="shrink-0 border-b border-border/70 px-5 pt-5 pb-4">
       <DialogTitle class="text-xl font-semibold">Capture a New Note</DialogTitle>
     </DialogHeader>
-    <div class="space-y-6">
+    <div class="flex-1 space-y-6 overflow-y-auto px-5 py-4">
       <div>
         <Label for="content" class="text-sm font-medium">Content</Label>
         <Textarea
           id="content"
+          bind:ref={contentRef}
           bind:value={content}
           placeholder="Capture your atomic note..."
-          class="mt-2 min-h-[100px] resize-none"
+          class="mt-2 h-36 max-h-36 overflow-y-auto resize-none"
           maxlength={500}
+          onkeydown={handleContentKeydown}
         />
         <div class="flex justify-between items-center mt-2 text-xs text-muted-foreground">
           <span>{content.length} / 500 characters</span>
+          <span class="hidden sm:inline">Ctrl/⌘ + Enter to create</span>
+          <span class="sm:hidden">Tap Create below</span>
         </div>
-      </div>
-      <div>
-        <Label for="tags" class="text-sm font-medium">Tag (optional)</Label>
-        <div class="flex flex-wrap gap-3 mt-3">
-          {#each availableTags as tag}
-            <button
-              type="button"
-              onclick={() => selectTag(tag)}
-              class="flex items-center gap-2 px-4 py-2 rounded-full border-2 transition-all duration-200 capitalize text-sm font-medium
-                {selectedTag === tag
-                  ? 'border-primary bg-primary text-primary-foreground shadow-sm'
-                  : 'border-border bg-background text-foreground hover:border-primary/50 hover:bg-primary/5'}"
-            >
-              <svelte:component this={getTagComponent(tag)} class="w-4 h-4" />
-              {tag}
-            </button>
-          {/each}
-        </div>
+        <p class="mt-2 text-xs text-muted-foreground">
+          Add tags directly in the note like `#idea` or `#research`.
+        </p>
+        {#if finalTags.length > 0}
+          <div class="mt-3 flex flex-wrap gap-2">
+            {#each finalTags as tag}
+              <span class="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
+                #{tag}
+              </span>
+            {/each}
+          </div>
+        {/if}
       </div>
     </div>
-    <DialogFooter class="gap-3">
-      <DialogClose>
-        <Button variant="outline" class="px-6">Cancel</Button>
-      </DialogClose>
-      <Button onclick={()=> handleFinalConfirm(content,selectedTag)} disabled={!isValid} class="px-6">
-        Create
+    <DialogFooter class="shrink-0 border-t border-border/70 bg-background/95 px-5 py-4 gap-3">
+      <Button onclick={handleCreate} disabled={!isValid || isSubmitting} class="px-6">
+        {isSubmitting ? 'Creating...' : 'Create'}
       </Button>
     </DialogFooter>
   </DialogContent>
 </Dialog>
-
