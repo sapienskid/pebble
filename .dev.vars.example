@@ -1,0 +1,3 @@
+# Worker secret used by Pebble and the Obsidian plugin for sync authentication.
+# Generate one with: openssl rand -hex 32
+API_KEY=replace-with-a-long-random-string

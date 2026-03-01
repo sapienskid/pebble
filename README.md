@@ -18,9 +18,9 @@ Production URL: <https://pebble.savinpokharel.workers.dev>
 
 [![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/sapienskid/pebble)
 
-After clicking the button, Cloudflare will create a Worker project from this repo. Keep the default build/deploy settings unless you have custom requirements.
+After clicking the button, Cloudflare creates a Worker project from this repo and automatically provisions the required `PEBBLE_SYNC_KV` binding for sync. Keep the default build/deploy settings unless you have custom requirements.
 
-If the deploy form prompts for environment variables/secrets, set `API_KEY` there during deploy so users do not need to configure it afterward.
+Set `API_KEY` in the deploy form (for example, generated with `openssl rand -hex 32`). This same key is used by both Pebble and the Obsidian plugin.
 
 ## Post-Deploy Setup (Required for Sync)
 
@@ -32,15 +32,10 @@ The app itself works without cloud sync. To enable sync between Pebble and Obsid
    - Cloudflare Dashboard -> Workers & Pages -> your worker -> Settings -> Variables and Secrets -> Add secret
    - Key: `API_KEY`
    - Value: any long random string
-2. Create and bind KV for sync:
-   - Workers & Pages -> your worker -> Settings -> Bindings -> Add binding
-   - Type: `KV Namespace`
-   - Variable name: `PEBBLE_SYNC_KV`
-   - Namespace: create a new one (for example `pebble-sync`)
-3. In Pebble app Settings:
+2. In Pebble app Settings:
    - Enable background sync
    - Paste the same API key into the `API Key` field
-4. In the Obsidian plugin settings:
+3. In the Obsidian plugin settings:
    - Set `API URL` to your deployed Worker URL
    - Set `API Key` to the same `API_KEY`
 
@@ -49,7 +44,7 @@ The app itself works without cloud sync. To enable sync between Pebble and Obsid
 1. User creates a note in the Pebble UI.
 2. Note is written to local IndexedDB immediately.
 3. If sync is enabled, unsynced notes are POSTed to `/api/sync/push`.
-4. Worker validates the API key and stores sync items in KV with TTL.
+4. Worker validates the API key and stores sync items in KV with TTL (7 days default; selectable 7/15/30 days in app settings).
 
 This keeps capture fast and offline-safe even when network is unavailable.
 
@@ -74,7 +69,7 @@ For full-stack local development with Cloudflare runtime:
 npm run wrangler:dev
 ```
 
-Set local secrets in `.dev.vars` when testing sync endpoints:
+Set local secrets in `.dev.vars` when testing sync endpoints (see `.dev.vars.example`):
 
 ```bash
 API_KEY=your-local-api-key
