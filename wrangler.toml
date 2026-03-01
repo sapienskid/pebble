@@ -7,6 +7,9 @@ compatibility_date = "2025-09-24"
 directory = ".svelte-kit/cloudflare/assets"
 binding = "ASSETS"
 
+[[kv_namespaces]]
+binding = "PEBBLE_SYNC_KV"
+
 # Enable observability logs
 [observability.logs]
 enabled = true

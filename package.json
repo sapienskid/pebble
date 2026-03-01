@@ -35,7 +35,7 @@
 		"typescript": "^5.0.0",
 		"unplugin-icons": "^22.3.0",
 		"vite": "^7.0.4",
-		"wrangler": "^4.40.1"
+		"wrangler": "^4.69.0"
 	},
 	"dependencies": {
 		"@iconify-json/lucide": "^1.2.68",
@@ -46,5 +46,15 @@
 		"dexie": "^4.2.0",
 		"shadcn-svelte": "^1.0.7",
 		"uuid": "^13.0.0"
+	},
+	"cloudflare": {
+		"bindings": {
+			"PEBBLE_SYNC_KV": {
+				"description": "Cloudflare KV namespace used for Pebble -> Obsidian sync payloads. Leave default to auto-provision on deploy."
+			},
+			"API_KEY": {
+				"description": "Generate a long random value (for example `openssl rand -hex 32`) and reuse it in Pebble + the Obsidian plugin."
+			}
+		}
 	}
 }
