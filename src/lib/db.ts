@@ -24,6 +24,8 @@ export interface Note {
   tags: string[];
   synced: boolean;
   syncedAt?: string | null; // ISO timestamp of last successful sync (null = never synced)
+  pinned: boolean;
+  snoozedUntil?: string | null; // ISO timestamp when snooze expires (null = not snoozed)
 }
 
 
@@ -57,6 +59,17 @@ class PebbleDB extends Dexie {
         if (note.syncedAt === undefined) {
           note.syncedAt = null;
         }
+      });
+    });
+
+    this.version(4).stores({
+      notes: 'id, timestamp, synced, pinned, snoozedUntil, *tags',
+      settings: 'id',
+      theme: 'id'
+    }).upgrade(trans => {
+      return trans.table('notes').toCollection().modify(note => {
+        if (note.pinned === undefined) note.pinned = false;
+        if (note.snoozedUntil === undefined) note.snoozedUntil = null;
       });
     });
   }

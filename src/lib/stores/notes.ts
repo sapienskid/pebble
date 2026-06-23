@@ -63,7 +63,9 @@ export async function addNote(content: string, tags: string[] = [], options: Add
 		tags,
 		timestamp: new Date().toISOString(),
 		synced: false,
-		syncedAt: null
+		syncedAt: null,
+		pinned: false,
+		snoozedUntil: null
 	};
 	try {
 		await (db as any).notes.add(note);
@@ -99,6 +101,64 @@ export async function deleteNote(noteId: string) {
   } catch (error) {
     console.error('Failed to delete note:', error);
     return false;
+  }
+}
+
+export async function togglePin(noteId: string) {
+  if (!isBrowser) return;
+  try {
+    const note = await (db as any).notes.get(noteId);
+    if (!note) return;
+    const pinned = !note.pinned;
+    await (db as any).notes.update(noteId, { pinned });
+    notesStore.update((notes) =>
+      notes.map((n) => (n.id === noteId ? { ...n, pinned } : n))
+    );
+  } catch (error) {
+    console.error('Failed to toggle pin:', error);
+  }
+}
+
+export async function snoozeNote(noteId: string, snoozedUntil: string) {
+  if (!isBrowser) return;
+  try {
+    const note = await (db as any).notes.get(noteId);
+    if (!note) return;
+    await (db as any).notes.update(noteId, { snoozedUntil });
+    notesStore.update((notes) =>
+      notes.map((n) => (n.id === noteId ? { ...n, snoozedUntil } : n))
+    );
+    scheduleSnoozeNotification(noteId, note.content, snoozedUntil);
+  } catch (error) {
+    console.error('Failed to snooze note:', error);
+  }
+}
+
+async function scheduleSnoozeNotification(noteId: string, content: string, snoozedUntil: string) {
+  if (!('serviceWorker' in navigator)) return;
+  try {
+    const registration = await navigator.serviceWorker.ready;
+    if (!registration.active) return;
+    registration.active.postMessage({
+      type: 'SCHEDULE_SNOOZE',
+      noteId,
+      content,
+      snoozedUntil
+    });
+  } catch (error) {
+    console.error('Failed to schedule snooze notification:', error);
+  }
+}
+
+export async function unsnoozeNote(noteId: string) {
+  if (!isBrowser) return;
+  try {
+    await (db as any).notes.update(noteId, { snoozedUntil: null });
+    notesStore.update((notes) =>
+      notes.map((n) => (n.id === noteId ? { ...n, snoozedUntil: null } : n))
+    );
+  } catch (error) {
+    console.error('Failed to unsnooze note:', error);
   }
 }
 

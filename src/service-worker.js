@@ -171,3 +171,64 @@ async function syncUnsyncedData() {
 	console.log(`Background sync: ${successCount} synced, ${failCount} failed (out of ${unsyncedNotes.length} total)`);
 }
 
+// Snooze notification handler
+self.addEventListener('message', (event) => {
+	if (event.data && event.data.type === 'SCHEDULE_SNOOZE') {
+		event.waitUntil(scheduleSnoozeNotification(event.data));
+	}
+});
+
+async function scheduleSnoozeNotification(data) {
+	const { noteId, content, snoozedUntil } = data;
+	const triggerTime = new Date(snoozedUntil).getTime();
+
+	if (triggerTime <= Date.now()) return;
+
+	const title = 'Pebble Reminder';
+	const body = content.length > 100 ? content.substring(0, 97) + '...' : content;
+
+	try {
+		if ('showTrigger' in ServiceWorkerRegistration.prototype) {
+			const registration = self.registration;
+			await registration.showNotification(title, {
+				body,
+				tag: `snooze-${noteId}`,
+				icon: '/icon-192.png',
+				showTrigger: new TimestampTrigger(triggerTime),
+				data: { noteId }
+			});
+		} else {
+			// Fallback: use timeout-based scheduling
+			const delay = triggerTime - Date.now();
+			// Max 24-hour timeout for safety
+			const cappedDelay = Math.min(delay, 24 * 60 * 60 * 1000);
+			setTimeout(async () => {
+				await self.registration.showNotification(title, {
+					body,
+					tag: `snooze-${noteId}`,
+					icon: '/icon-192.png',
+					data: { noteId }
+				});
+			}, cappedDelay);
+		}
+	} catch (err) {
+		console.error('Failed to schedule snooze notification:', err);
+	}
+}
+
+self.addEventListener('notificationclick', (event) => {
+	event.notification.close();
+	event.waitUntil(
+		clients.matchAll({ type: 'window' }).then((clientList) => {
+			for (const client of clientList) {
+				if (client.url && 'focus' in client) {
+					return client.focus();
+				}
+			}
+			if (clients.openWindow) {
+				return clients.openWindow('/');
+			}
+		})
+	);
+});
+

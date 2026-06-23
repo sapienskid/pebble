@@ -26,7 +26,10 @@ onMount(() => {
     html.classList.toggle('dark', isDark);
   });
 
-
+  // Request notification permission for snooze reminders
+  if ('Notification' in window && Notification.permission === 'default') {
+    Notification.requestPermission();
+  }
 
   // Register background sync
   registerBackgroundSync();
