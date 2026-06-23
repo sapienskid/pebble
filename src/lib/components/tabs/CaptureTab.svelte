@@ -10,7 +10,7 @@
   import { noteDialogOpen } from '$lib/stores/ui';
   import type { Note } from '$lib/db';
 
-  let notes: Note[] = [];
+  let notes: Note[] = $state([]);
   let dialogOpen = $state(false);
   let searchQuery = $state('');
   let showPinnedOnly = $state(false);
