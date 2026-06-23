@@ -171,14 +171,14 @@ async function syncUnsyncedData() {
 	console.log(`Background sync: ${successCount} synced, ${failCount} failed (out of ${unsyncedNotes.length} total)`);
 }
 
-// Snooze notification handler
+// Reminder notification handler
 self.addEventListener('message', (event) => {
 	if (event.data && event.data.type === 'SCHEDULE_SNOOZE') {
-		event.waitUntil(scheduleSnoozeNotification(event.data));
+		event.waitUntil(scheduleReminder(event.data));
 	}
 });
 
-async function scheduleSnoozeNotification(data) {
+async function scheduleReminder(data) {
 	const { noteId, content, snoozedUntil } = data;
 	const triggerTime = new Date(snoozedUntil).getTime();
 
@@ -188,31 +188,29 @@ async function scheduleSnoozeNotification(data) {
 	const body = content.length > 100 ? content.substring(0, 97) + '...' : content;
 
 	try {
-		if ('showTrigger' in ServiceWorkerRegistration.prototype) {
-			const registration = self.registration;
-			await registration.showNotification(title, {
+		if (typeof TimestampTrigger !== 'undefined') {
+			await self.registration.showNotification(title, {
 				body,
-				tag: `snooze-${noteId}`,
+				tag: `reminder-${noteId}`,
 				icon: '/icon-192.png',
 				showTrigger: new TimestampTrigger(triggerTime),
 				data: { noteId }
 			});
 		} else {
-			// Fallback: use timeout-based scheduling
+			// Fallback: timeout (works while SW is alive, max ~24h before browser throttles)
 			const delay = triggerTime - Date.now();
-			// Max 24-hour timeout for safety
 			const cappedDelay = Math.min(delay, 24 * 60 * 60 * 1000);
 			setTimeout(async () => {
 				await self.registration.showNotification(title, {
 					body,
-					tag: `snooze-${noteId}`,
+					tag: `reminder-${noteId}`,
 					icon: '/icon-192.png',
 					data: { noteId }
 				});
 			}, cappedDelay);
 		}
 	} catch (err) {
-		console.error('Failed to schedule snooze notification:', err);
+		console.error('Failed to schedule reminder:', err);
 	}
 }
 

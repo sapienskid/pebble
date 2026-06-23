@@ -119,7 +119,7 @@
           </div>
           <div>
             <p class="text-sm text-muted-foreground">{stats.pinnedCount} pinned</p>
-            <p class="text-sm text-muted-foreground">{stats.snoozedCount} snoozed</p>
+            <p class="text-sm text-muted-foreground">{stats.snoozedCount} reminders</p>
           </div>
         </div>
       </div>

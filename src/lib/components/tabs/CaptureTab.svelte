@@ -64,11 +64,11 @@
     return sorted;
   });
 
-  function handleSnooze(noteId: string) {
+  function handleRemind(noteId: string) {
     snoozePickerNoteId = noteId;
   }
 
-  async function onSnoozeSelect(until: string) {
+  async function onRemindSelect(until: string) {
     if (snoozePickerNoteId) {
       await snoozeNote(snoozePickerNoteId, until);
     }
@@ -143,7 +143,12 @@
     {:else}
       {#each filteredNotes as note (note.id)}
         {@const expired = isSnoozeExpired(note)}
-        <div class="group flex items-start p-4 bg-card rounded-xl border border-border/50 shadow-sm hover:shadow-md transition-all duration-200 hover:border-primary/20 relative {expired ? 'ring-2 ring-amber-500/50' : ''} {note.pinned ? 'border-primary/30' : ''}">
+        <div
+          class="group flex items-start p-4 bg-card rounded-xl border border-border/50 shadow-sm hover:shadow-md transition-all duration-200 hover:border-primary/20 relative {expired ? 'ring-2 ring-amber-500/50' : ''} {note.pinned ? 'border-primary/30' : ''}"
+          role="button"
+          tabindex="0"
+          ondblclick={() => togglePin(note.id)}
+        >
           <div class="flex-1 min-w-0">
             <div class="flex items-center gap-2 mb-1">
               {#if note.pinned}
@@ -194,12 +199,12 @@
                 variant="ghost"
                 size="icon"
                 class="h-8 w-8"
-                aria-label={note.snoozedUntil ? 'Unsnooze' : 'Set reminder'}
+                aria-label={note.snoozedUntil ? 'Remove reminder' : 'Set reminder'}
                 onclick={() => {
                   if (note.snoozedUntil) {
                     unsnoozeNote(note.id);
                   } else {
-                    handleSnooze(note.id);
+                    handleRemind(note.id);
                   }
                 }}
               >
@@ -211,7 +216,7 @@
               </Button>
               {#if snoozePickerNoteId === note.id}
                 <SnoozePicker
-                  onSnooze={onSnoozeSelect}
+                  onRemind={onRemindSelect}
                   onClose={() => snoozePickerNoteId = null}
                 />
               {/if}
