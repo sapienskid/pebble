@@ -2,8 +2,11 @@
   import { Button } from "$lib/components/ui/button";
   import { Clock, X } from '@lucide/svelte';
 
-  export let onRemind: (until: string) => void;
-  export let onClose: () => void;
+  let { onRemind, onClose }: { onRemind: (until: string) => void; onClose: () => void } = $props();
+
+  let showCustom = $state(false);
+  let customDate = $state('');
+  let customTime = $state('09:00');
 
   function remindPreset(hours: number): string {
     const d = new Date(Date.now() + hours * 60 * 60 * 1000);
@@ -32,6 +35,15 @@
     return d.toISOString();
   }
 
+  function handleCustom() {
+    if (!customDate) return;
+    const [h, m] = customTime.split(':').map(Number);
+    const d = new Date(customDate);
+    d.setHours(h, m, 0, 0);
+    if (d.getTime() <= Date.now()) return;
+    onRemind(d.toISOString());
+  }
+
   const presets = [
     { label: '1 hour', get: () => remindPreset(1) },
     { label: '3 hours', get: () => remindPreset(3) },
@@ -43,7 +55,7 @@
   ];
 </script>
 
-<div class="absolute right-0 top-full mt-1 z-50 w-48 rounded-lg border border-border bg-background shadow-lg p-2">
+<div class="absolute right-0 top-full mt-1 z-50 w-52 rounded-lg border border-border bg-background shadow-lg p-2">
   <div class="flex items-center justify-between mb-2 px-1">
     <span class="text-xs font-medium text-muted-foreground flex items-center gap-1">
       <Clock class="w-3 h-3" /> Remind me at
@@ -52,16 +64,59 @@
       <X class="w-3 h-3" />
     </button>
   </div>
-  <div class="space-y-0.5">
-    {#each presets as preset}
+
+  {#if !showCustom}
+    <div class="space-y-0.5">
+      {#each presets as preset}
+        <Button
+          variant="ghost"
+          size="sm"
+          class="w-full justify-start text-xs h-8"
+          onclick={() => onRemind(preset.get())}
+        >
+          {preset.label}
+        </Button>
+      {/each}
       <Button
         variant="ghost"
         size="sm"
-        class="w-full justify-start text-xs h-8"
-        onclick={() => onRemind(preset.get())}
+        class="w-full justify-start text-xs h-8 text-muted-foreground"
+        onclick={() => showCustom = true}
       >
-        {preset.label}
+        Custom...
       </Button>
-    {/each}
-  </div>
+    </div>
+  {:else}
+    <div class="space-y-2">
+      <input
+        type="date"
+        class="w-full px-2 py-1.5 text-xs rounded border border-border bg-background focus:outline-none focus:ring-1 focus:ring-primary"
+        bind:value={customDate}
+      />
+      <input
+        type="time"
+        class="w-full px-2 py-1.5 text-xs rounded border border-border bg-background focus:outline-none focus:ring-1 focus:ring-primary"
+        bind:value={customTime}
+      />
+      <div class="flex gap-1">
+        <Button
+          variant="outline"
+          size="sm"
+          class="flex-1 text-xs h-7"
+          onclick={() => showCustom = false}
+        >
+          Back
+        </Button>
+        <Button
+          variant="default"
+          size="sm"
+          class="flex-1 text-xs h-7"
+          disabled={!customDate}
+          onclick={handleCustom}
+        >
+          Set
+        </Button>
+      </div>
+    </div>
+  {/if}
 </div>

@@ -31,13 +31,19 @@
     return () => unsubscribe();
   });
 
-  // Fuzzy search: check if all query chars appear in order (allowing gaps)
+  // Fuzzy: check if all query chars appear in order (allowing gaps)
   function fuzzyMatch(query: string, target: string): boolean {
     let qi = 0;
     for (let ti = 0; ti < target.length && qi < query.length; ti++) {
       if (target[ti] === query[qi]) qi++;
     }
     return qi === query.length;
+  }
+
+  // Match if query is a substring OR fuzzy character-order match
+  function matchesQuery(query: string, target: string): boolean {
+    if (target.includes(query)) return true;
+    return fuzzyMatch(query, target);
   }
 
   const filteredNotes = $derived.by(() => {
@@ -48,8 +54,8 @@
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       result = result.filter(n =>
-        fuzzyMatch(q, n.content.toLowerCase()) ||
-        n.tags.some(t => fuzzyMatch(q, t.toLowerCase()))
+        matchesQuery(q, n.content.toLowerCase()) ||
+        n.tags.some(t => matchesQuery(q, t.toLowerCase()))
       );
     }
     // Sort: pinned first, non-snoozed before snoozed, then by timestamp descending
