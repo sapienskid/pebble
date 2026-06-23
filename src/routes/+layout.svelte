@@ -1,5 +1,6 @@
 <script lang="ts">
 import "../app.css";
+import { pwaInfo } from 'virtual:pwa-info';
 import { themeStore } from '$lib/stores/theme';
 import { settingsStore } from '$lib/stores/settings';
 import { syncUnsyncedItems } from '$lib/services/sync';
@@ -7,6 +8,7 @@ import { onMount } from 'svelte';
 
 let { children } = $props();
 
+const webManifestLink = pwaInfo?.webManifest.linkTag ?? '';
 
 async function registerBackgroundSync() {
   if ('serviceWorker' in navigator && 'sync' in window.ServiceWorkerRegistration.prototype) {
@@ -42,7 +44,7 @@ onMount(() => {
 
 <svelte:head>
 	<link rel="icon" href="/favicon.svg" />
-	<!-- {@html webManifestLink} -->
+	{@html webManifestLink}
 </svelte:head>
 
 {@render children?.()}
