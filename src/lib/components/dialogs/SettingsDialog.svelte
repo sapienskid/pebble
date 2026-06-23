@@ -3,6 +3,8 @@
   import { settingsStore } from "$lib/stores/settings";
   import { notesStore } from "$lib/stores/notes";
   import { Button } from "$lib/components/ui/button";
+  import { resetAllSyncState, syncUnsyncedItems } from '$lib/services/sync';
+  import { syncStore } from '$lib/stores/sync';
   import { Label } from "$lib/components/ui/label";
   import { Input } from "$lib/components/ui/input";
   import { Switch } from "$lib/components/ui/switch";
@@ -41,6 +43,21 @@
 
   function setRetention(retentionDays: number | null) {
     settingsStore.update((s) => ({ ...s, retentionDays }));
+  }
+
+  let reSyncing = false;
+
+  async function reSyncAll() {
+    if (!confirm('This will re-sync all notes to the cloud, including notes that were already synced. Continue?')) return;
+    reSyncing = true;
+    try {
+      await resetAllSyncState();
+      await syncUnsyncedItems();
+    } catch (e) {
+      console.error('Failed to re-sync all notes:', e);
+    } finally {
+      reSyncing = false;
+    }
   }
 
   async function clearLocalData() {
@@ -137,6 +154,19 @@
             oninput={(e) => updateApiKey(e.currentTarget.value)}
           />
           <p class="text-xs text-muted-foreground">Required for cloud sync. Get this from your Cloudflare dashboard.</p>
+        </div>
+        <div class="pt-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onclick={reSyncAll}
+            disabled={reSyncing || !$settingsStore.syncEnabled || !$settingsStore.syncToken}
+          >
+            {reSyncing ? 'Re-syncing...' : 'Re-sync all notes'}
+          </Button>
+          <p class="text-xs text-muted-foreground mt-1">
+            Use this if notes were synced but expired from the cloud before Obsidian could fetch them.
+          </p>
         </div>
       </div>
 

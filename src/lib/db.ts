@@ -23,6 +23,7 @@ export interface Note {
   timestamp: string;
   tags: string[];
   synced: boolean;
+  syncedAt?: string | null; // ISO timestamp of last successful sync (null = never synced)
 }
 
 
@@ -40,10 +41,21 @@ class PebbleDB extends Dexie {
       settings: 'id',
       theme: 'id'
     }).upgrade(trans => {
-      // Ensure all existing notes have synced field set to false
       return trans.table('notes').toCollection().modify(note => {
         if (note.synced === undefined || note.synced === null) {
           note.synced = false;
+        }
+      });
+    });
+
+    this.version(3).stores({
+      notes: 'id, timestamp, synced, *tags',
+      settings: 'id',
+      theme: 'id'
+    }).upgrade(trans => {
+      return trans.table('notes').toCollection().modify(note => {
+        if (note.syncedAt === undefined) {
+          note.syncedAt = null;
         }
       });
     });

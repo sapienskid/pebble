@@ -3,6 +3,14 @@ import { db, type Settings } from '../db';
 import { settingsStore } from '../stores/settings';
 import { syncStore, setSyncError, clearSyncError } from '../stores/sync';
 
+function isKvEntryExpired(note: any, ttlDays: number): boolean {
+  if (note.synced === false || note.synced === undefined || note.synced === null) return true;
+  if (!note.syncedAt) return true;
+  const syncedAt = new Date(note.syncedAt).getTime();
+  const ttlMs = ttlDays * 24 * 60 * 60 * 1000;
+  return Date.now() - syncedAt > ttlMs;
+}
+
 export async function syncUnsyncedItems() {
   const settings = get(settingsStore);
 
@@ -17,9 +25,10 @@ export async function syncUnsyncedItems() {
   }
 
   const pebbleDB = db as any;
+  const ttlDays = (settings as Settings).syncRetentionDays ?? 7;
 
   const allNotes = await pebbleDB.notes.toArray();
-  const unsyncedNotes = allNotes.filter((note: any) => note.synced === false || note.synced === undefined || note.synced === null);
+  const unsyncedNotes = allNotes.filter((note: any) => isKvEntryExpired(note, ttlDays));
 
   const items = [
     ...unsyncedNotes.map((note: any) => ({ type: 'note', data: note, markdown: note.content }))
@@ -32,11 +41,11 @@ export async function syncUnsyncedItems() {
 
   clearSyncError();
   syncStore.update((s) => ({ ...s, syncing: true, successCount: 0, failCount: 0, error: null }));
-  const ttlDays = (settings as Settings).syncRetentionDays ?? 7;
 
   let successCount = 0;
   let failCount = 0;
   let authFailed = false;
+  const now = new Date().toISOString();
 
   try {
     for (const item of items) {
@@ -58,7 +67,7 @@ export async function syncUnsyncedItems() {
         });
 
         if (response.ok) {
-          await pebbleDB.notes.update(item.data.id, { synced: true });
+          await pebbleDB.notes.update(item.data.id, { synced: true, syncedAt: now });
           successCount++;
         } else if (response.status === 401 || response.status === 403) {
           authFailed = true;
@@ -73,7 +82,7 @@ export async function syncUnsyncedItems() {
     }
 
     if (successCount > 0) {
-      syncStore.update((s) => ({ ...s, lastSyncAt: new Date().toISOString(), successCount, failCount }));
+      syncStore.update((s) => ({ ...s, lastSyncAt: now, successCount, failCount }));
     }
 
     if (authFailed) {
@@ -85,6 +94,14 @@ export async function syncUnsyncedItems() {
     }
   } finally {
     syncStore.update((s) => ({ ...s, syncing: false }));
+  }
+}
+
+export async function resetAllSyncState() {
+  const pebbleDB = db as any;
+  const allNotes = await pebbleDB.notes.toArray();
+  for (const note of allNotes) {
+    await pebbleDB.notes.update(note.id, { synced: false, syncedAt: null });
   }
 }
 

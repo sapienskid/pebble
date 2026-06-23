@@ -62,7 +62,8 @@ export async function addNote(content: string, tags: string[] = [], options: Add
 		content,
 		tags,
 		timestamp: new Date().toISOString(),
-		synced: false
+		synced: false,
+		syncedAt: null
 	};
 	try {
 		await (db as any).notes.add(note);

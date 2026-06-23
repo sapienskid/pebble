@@ -102,22 +102,30 @@ self.addEventListener('sync', (event) => {
 	}
 });
 
+function isKvEntryExpired(note, ttlDays) {
+	if (!note.synced) return true;
+	if (!note.syncedAt) return true;
+	const syncedAt = new Date(note.syncedAt).getTime();
+	const ttlMs = ttlDays * 24 * 60 * 60 * 1000;
+	return Date.now() - syncedAt > ttlMs;
+}
+
 async function syncUnsyncedData() {
 	// Query IndexedDB for unsynced items
 	const allNotes = await db.notes.toArray();
-	const unsyncedNotes = allNotes.filter(note => !note.synced);
 
-	if (unsyncedNotes.length === 0) return;
-
-	// Get settings
 	const settings = await db.settings.get('settings');
 	if (!settings || !settings.syncEnabled || !settings.syncToken) {
 		console.warn('Background sync skipped: sync not enabled or no API key configured');
 		return;
 	}
 
-	const token = settings.syncToken;
 	const ttlDays = settings.syncRetentionDays ?? 7;
+	const unsyncedNotes = allNotes.filter(note => isKvEntryExpired(note, ttlDays));
+
+	if (unsyncedNotes.length === 0) return;
+
+	const token = settings.syncToken;
 
 	const items = [
 		...unsyncedNotes.map((note) => ({ type: 'note', data: note, markdown: note.content })),
@@ -125,6 +133,7 @@ async function syncUnsyncedData() {
 
 	let successCount = 0;
 	let failCount = 0;
+	const now = new Date().toISOString();
 
 	for (const item of items) {
 		try {
@@ -145,7 +154,7 @@ async function syncUnsyncedData() {
 			});
 
 			if (response.ok) {
-				await db.notes.update(item.data.id, { synced: true });
+				await db.notes.update(item.data.id, { synced: true, syncedAt: now });
 				successCount++;
 			} else if (response.status === 401 || response.status === 403) {
 				console.error('Background sync: authentication failed. Check your API key.');
