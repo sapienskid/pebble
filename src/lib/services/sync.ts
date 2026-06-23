@@ -1,19 +1,23 @@
 import { get } from 'svelte/store';
 import { db, type Settings } from '../db';
 import { settingsStore } from '../stores/settings';
-import { syncStore } from '../stores/sync';
+import { syncStore, setSyncError, clearSyncError } from '../stores/sync';
 
 export async function syncUnsyncedItems() {
   const settings = get(settingsStore);
 
   if (!settings.syncEnabled) {
+    setSyncError('Sync is disabled. Enable it in Settings.');
     return;
   }
 
-  // Cast db to PebbleDB
+  if (!settings.syncToken) {
+    setSyncError('API key not set. Add it in Settings.');
+    return;
+  }
+
   const pebbleDB = db as any;
 
-  // Get unsynced notes - filter to handle undefined/null synced values
   const allNotes = await pebbleDB.notes.toArray();
   const unsyncedNotes = allNotes.filter((note: any) => note.synced === false || note.synced === undefined || note.synced === null);
 
@@ -21,8 +25,19 @@ export async function syncUnsyncedItems() {
     ...unsyncedNotes.map((note: any) => ({ type: 'note', data: note, markdown: note.content }))
   ];
 
-  syncStore.update((s) => ({ ...s, syncing: true }));
+  if (items.length === 0) {
+    setSyncError('No unsynced notes to sync.');
+    return;
+  }
+
+  clearSyncError();
+  syncStore.update((s) => ({ ...s, syncing: true, successCount: 0, failCount: 0, error: null }));
   const ttlDays = (settings as Settings).syncRetentionDays ?? 7;
+
+  let successCount = 0;
+  let failCount = 0;
+  let authFailed = false;
+
   try {
     for (const item of items) {
       try {
@@ -43,17 +58,31 @@ export async function syncUnsyncedItems() {
         });
 
         if (response.ok) {
-          // Mark as synced
           await pebbleDB.notes.update(item.data.id, { synced: true });
+          successCount++;
+        } else if (response.status === 401 || response.status === 403) {
+          authFailed = true;
+          failCount++;
+          break;
         } else {
-          console.error(`Failed to sync ${item.type}:`, response.statusText);
+          failCount++;
         }
-      } catch (error) {
-        console.error(`Error syncing ${item.type}:`, error);
+      } catch {
+        failCount++;
       }
     }
-    // Mark last sync time even if there were zero items
-    syncStore.update((s) => ({ ...s, lastSyncAt: new Date().toISOString() }));
+
+    if (successCount > 0) {
+      syncStore.update((s) => ({ ...s, lastSyncAt: new Date().toISOString(), successCount, failCount }));
+    }
+
+    if (authFailed) {
+      setSyncError('Invalid API key. Check your key in Settings.');
+    } else if (failCount > 0 && successCount === 0) {
+      setSyncError(`Sync failed for ${failCount} note${failCount > 1 ? 's' : ''}. Check your connection and try again.`);
+    } else if (failCount > 0) {
+      setSyncError(`${successCount} synced, ${failCount} failed. Check your connection.`);
+    }
   } finally {
     syncStore.update((s) => ({ ...s, syncing: false }));
   }

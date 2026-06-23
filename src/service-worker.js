@@ -107,17 +107,24 @@ async function syncUnsyncedData() {
 	const allNotes = await db.notes.toArray();
 	const unsyncedNotes = allNotes.filter(note => !note.synced);
 
+	if (unsyncedNotes.length === 0) return;
+
 	// Get settings
 	const settings = await db.settings.get('settings');
 	if (!settings || !settings.syncEnabled || !settings.syncToken) {
+		console.warn('Background sync skipped: sync not enabled or no API key configured');
 		return;
 	}
 
 	const token = settings.syncToken;
+	const ttlDays = settings.syncRetentionDays ?? 7;
 
 	const items = [
 		...unsyncedNotes.map((note) => ({ type: 'note', data: note, markdown: note.content })),
 	];
+
+	let successCount = 0;
+	let failCount = 0;
 
 	for (const item of items) {
 		try {
@@ -131,21 +138,27 @@ async function syncUnsyncedData() {
 					type: item.type,
 					markdown: item.markdown,
 					id: item.data.id,
-					createdAt: item.data.timestamp
+					createdAt: item.data.timestamp,
+					tags: Array.isArray(item.data.tags) ? item.data.tags : [],
+					ttlDays
 				})
 			});
 
 			if (response.ok) {
-				// Mark as synced
 				await db.notes.update(item.data.id, { synced: true });
+				successCount++;
+			} else if (response.status === 401 || response.status === 403) {
+				console.error('Background sync: authentication failed. Check your API key.');
+				failCount++;
+				break;
 			} else {
-				console.error(`Failed to sync ${item.type}:`, response.statusText);
+				failCount++;
 			}
 		} catch (error) {
-			console.error(`Error syncing ${item.type}:`, error);
+			failCount++;
 		}
 	}
 
-	console.log(`Synced ${unsyncedNotes.length} notes`);
+	console.log(`Background sync: ${successCount} synced, ${failCount} failed (out of ${unsyncedNotes.length} total)`);
 }
 
