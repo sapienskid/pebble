@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { get } from 'svelte/store';
   import {
     Dialog,
     DialogContent,
@@ -12,26 +12,16 @@
 
   let { open = $bindable(false) }: { open: boolean } = $props();
 
-  let notes: Note[] = [];
-  let unsub: (() => void) | null = null;
+  let notes: Note[] = $state([]);
 
   $effect(() => {
     if (open) {
-      unsub = notesStore.subscribe(v => {
+      notes = get(notesStore);
+      const unsub = notesStore.subscribe(v => {
         notes = v;
       });
-    } else {
-      if (unsub) {
-        unsub();
-        unsub = null;
-      }
+      return unsub;
     }
-    return () => {
-      if (unsub) {
-        unsub();
-        unsub = null;
-      }
-    };
   });
 
   const stats = $derived.by(() => {

@@ -6,7 +6,6 @@
   import { Label } from "$lib/components/ui/label";
   import { addNote, deleteNote } from '$lib/stores/notes';
   import { sharedText } from '$lib/stores/ui';
-  import { Mic, MicOff } from '@lucide/svelte';
 
   export let open: boolean = false;
 
@@ -15,8 +14,6 @@
   let contentRef: HTMLTextAreaElement | null = null;
   let undoNoteId: string | null = null;
   let undoTimer: ReturnType<typeof setTimeout> | null = null;
-  let isListening = false;
-  let recognition: any = null;
 
   const UNDO_WINDOW_MS = 5000;
 
@@ -95,46 +92,6 @@
     open = false;
   }
 
-  function startListening() {
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SpeechRecognition) return;
-    recognition = new SpeechRecognition();
-    recognition.continuous = true;
-    recognition.interimResults = true;
-    recognition.onresult = (event: any) => {
-      let transcript = '';
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        transcript += event.results[i][0].transcript;
-      }
-      content = transcript;
-    };
-    recognition.onerror = (event: any) => {
-      if (event.error === 'no-speech' || event.error === 'aborted') return;
-      isListening = false;
-    };
-    recognition.onend = () => {
-      isListening = false;
-    };
-    recognition.start();
-    isListening = true;
-  }
-
-  function stopListening() {
-    if (recognition) {
-      recognition.stop();
-      recognition = null;
-    }
-    isListening = false;
-  }
-
-  function toggleVoice() {
-    if (isListening) {
-      stopListening();
-    } else {
-      startListening();
-    }
-  }
-
   async function handleCreate() {
     if (!isValid || isSubmitting) return;
     isSubmitting = true;
@@ -150,7 +107,7 @@
   <DialogTrigger>
     <slot />
   </DialogTrigger>
-  <DialogContent class="flex w-[calc(100%-1.5rem)] max-w-md max-h-[calc(100dvh-1.5rem)] flex-col overflow-hidden p-0 gap-0">
+  <DialogContent class="flex w-[calc(100%-1.5rem)] max-w-md max-h-[calc(100dvh-1.5rem)] flex-col overflow-hidden p-0 gap-0 !top-[35%]">
     <DialogHeader class="shrink-0 border-b border-border/70 px-5 pt-5 pb-4">
       <DialogTitle class="text-xl font-semibold">Capture a New Note</DialogTitle>
     </DialogHeader>
@@ -167,21 +124,7 @@
           onkeydown={handleContentKeydown}
         />
         <div class="flex justify-between items-center mt-2 text-xs text-muted-foreground">
-          <div class="flex items-center gap-2">
-            <span>{content.length} / 500 characters</span>
-            <button
-              type="button"
-              class="p-1 rounded hover:bg-muted transition-colors {isListening ? 'text-destructive' : ''}"
-              onclick={toggleVoice}
-              aria-label={isListening ? 'Stop recording' : 'Start voice input'}
-            >
-              {#if isListening}
-                <MicOff class="w-4 h-4" />
-              {:else}
-                <Mic class="w-4 h-4" />
-              {/if}
-            </button>
-          </div>
+          <span>{content.length} / 500 characters</span>
           <span class="hidden sm:inline">Ctrl/⌘ + Enter to create</span>
           <span class="sm:hidden">Tap Create below</span>
         </div>

@@ -1,7 +1,8 @@
 <script lang="ts">
   import { Button } from "$lib/components/ui/button";
-  import { AlertTriangle, RefreshCw, Settings } from '@lucide/svelte';
+  import { AlertTriangle, BarChart3, RefreshCw, Settings } from '@lucide/svelte';
   import SettingsDialog from '$lib/components/dialogs/SettingsDialog.svelte';
+  import StatsDialog from '$lib/components/dialogs/StatsDialog.svelte';
   import { onMount } from 'svelte';
   import logoUrl from '$lib/assets/logo.svg?url';
   import { syncUnsyncedItems } from '$lib/services/sync';
@@ -10,6 +11,7 @@
   import { getRelativeTime } from '$lib/utils';
 
   let settingsOpen = $state(false);
+  let statsOpen = $state(false);
   let isOnline = $state(navigator.onLine);
 
   const syncing = $derived($syncStore.syncing);
@@ -63,6 +65,9 @@
     >
       <RefreshCw class="w-4 h-4 {syncing ? 'animate-spin' : ''}" />
     </Button>
+    <Button variant="outline" size="icon" onclick={() => statsOpen = true} aria-label="Statistics">
+      <BarChart3 class="w-4 h-4" />
+    </Button>
     <Button variant="outline" size="icon" onclick={() => settingsOpen = true} aria-label="Settings">
       <Settings class="w-4 h-4" />
     </Button>
@@ -70,3 +75,4 @@
 </header>
 
 <SettingsDialog bind:open={settingsOpen} />
+<StatsDialog bind:open={statsOpen} />

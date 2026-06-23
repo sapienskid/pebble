@@ -4,7 +4,7 @@
   import { Button } from "$lib/components/ui/button";
   import NoteDialog from '$lib/components/dialogs/NoteDialog.svelte';
   import SnoozePicker from '$lib/components/dialogs/SnoozePicker.svelte';
-  import { Lightbulb, Pin, PinOff, Bell, BellOff, Search, X, Tag } from '@lucide/svelte';
+  import { Lightbulb, Pin, PinOff, Bell, BellOff, Search, X } from '@lucide/svelte';
   import Icon from '@iconify/svelte';
   import { getTagIcon, getRelativeTime } from '$lib/utils';
   import { noteDialogOpen } from '$lib/stores/ui';
@@ -31,6 +31,15 @@
     return () => unsubscribe();
   });
 
+  // Fuzzy search: check if all query chars appear in order (allowing gaps)
+  function fuzzyMatch(query: string, target: string): boolean {
+    let qi = 0;
+    for (let ti = 0; ti < target.length && qi < query.length; ti++) {
+      if (target[ti] === query[qi]) qi++;
+    }
+    return qi === query.length;
+  }
+
   const filteredNotes = $derived.by(() => {
     let result = notes;
     if (showPinnedOnly) {
@@ -39,16 +48,17 @@
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       result = result.filter(n =>
-        n.content.toLowerCase().includes(q) ||
-        n.tags.some(t => t.toLowerCase().includes(q))
+        fuzzyMatch(q, n.content.toLowerCase()) ||
+        n.tags.some(t => fuzzyMatch(q, t.toLowerCase()))
       );
     }
-    // Sort: pinned first, then by timestamp descending
+    // Sort: pinned first, non-snoozed before snoozed, then by timestamp descending
     const sorted = [...result].sort((a, b) => {
       if (a.pinned && !b.pinned) return -1;
       if (!a.pinned && b.pinned) return 1;
-      if (a.snoozedUntil && !b.snoozedUntil) return 1;
-      if (!a.snoozedUntil && b.snoozedUntil) return -1;
+      const aHasSnooze = a.snoozedUntil ? 1 : 0;
+      const bHasSnooze = b.snoozedUntil ? 1 : 0;
+      if (aHasSnooze !== bHasSnooze) return aHasSnooze - bHasSnooze;
       return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
     });
     return sorted;
@@ -164,8 +174,8 @@
             <p class="text-xs text-muted-foreground/70 font-medium">{getRelativeTime(note.timestamp)}</p>
           </div>
 
-          <!-- Action buttons -->
-          <div class="flex items-center gap-0.5 ml-2 opacity-0 group-hover:opacity-100 transition-opacity">
+          <!-- Action buttons — always visible -->
+          <div class="flex items-center gap-0.5 ml-2">
             <Button
               variant="ghost"
               size="icon"
@@ -184,7 +194,7 @@
                 variant="ghost"
                 size="icon"
                 class="h-8 w-8"
-                aria-label={note.snoozedUntil ? 'Unsnooze' : 'Snooze'}
+                aria-label={note.snoozedUntil ? 'Unsnooze' : 'Set reminder'}
                 onclick={() => {
                   if (note.snoozedUntil) {
                     unsnoozeNote(note.id);
