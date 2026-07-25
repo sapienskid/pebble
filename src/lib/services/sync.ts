@@ -2,6 +2,7 @@ import { get } from 'svelte/store';
 import { db, type Settings } from '../db';
 import { settingsStore } from '../stores/settings';
 import { syncStore, setSyncError, clearSyncError } from '../stores/sync';
+import { addToast } from '../stores/toast';
 
 function isKvEntryExpired(note: any, ttlDays: number): boolean {
   if (note.synced === false || note.synced === undefined || note.synced === null) return true;
@@ -83,14 +84,20 @@ export async function syncUnsyncedItems() {
 
     if (successCount > 0) {
       syncStore.update((s) => ({ ...s, lastSyncAt: now, successCount, failCount }));
+      if (failCount === 0) {
+        addToast({ type: 'success', message: `${successCount} note${successCount > 1 ? 's' : ''} synced.` });
+      }
     }
 
     if (authFailed) {
       setSyncError('Invalid API key. Check your key in Settings.');
+      addToast({ type: 'error', message: 'Sync failed: Invalid API key.', duration: 6000 });
     } else if (failCount > 0 && successCount === 0) {
       setSyncError(`Sync failed for ${failCount} note${failCount > 1 ? 's' : ''}. Check your connection and try again.`);
+      addToast({ type: 'error', message: `Sync failed for ${failCount} note${failCount > 1 ? 's' : ''}.`, duration: 6000 });
     } else if (failCount > 0) {
       setSyncError(`${successCount} synced, ${failCount} failed. Check your connection.`);
+      addToast({ type: 'error', message: `${successCount} synced, ${failCount} failed.`, duration: 6000 });
     }
   } finally {
     syncStore.update((s) => ({ ...s, syncing: false }));
