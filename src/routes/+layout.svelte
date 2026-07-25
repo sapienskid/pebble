@@ -4,6 +4,7 @@ import { pwaInfo } from 'virtual:pwa-info';
 import { themeStore } from '$lib/stores/theme';
 import { settingsStore } from '$lib/stores/settings';
 import { syncUnsyncedItems } from '$lib/services/sync';
+import Toast from '$lib/components/Toast.svelte';
 import { onMount } from 'svelte';
 
 let { children } = $props();
@@ -28,11 +29,6 @@ onMount(() => {
     html.classList.toggle('dark', isDark);
   });
 
-  // Request notification permission for snooze reminders
-  if ('Notification' in window && Notification.permission === 'default') {
-    Notification.requestPermission();
-  }
-
   // Register background sync
   registerBackgroundSync();
 
@@ -41,6 +37,8 @@ onMount(() => {
   };
 });
 </script>
+
+<Toast />
 
 <svelte:head>
 	<link rel="icon" href="/favicon.svg" />

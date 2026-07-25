@@ -69,7 +69,6 @@
       .slice(0, 5);
 
     const pinnedCount = notes.filter(n => n.pinned).length;
-    const snoozedCount = notes.filter(n => n.snoozedUntil && new Date(n.snoozedUntil) > now).length;
 
     const last7Days: { day: string; count: number }[] = [];
     for (let i = 6; i >= 0; i--) {
@@ -80,7 +79,7 @@
       last7Days.push({ day: dayLabel, count: dailyMap.get(dayKey) || 0 });
     }
 
-    return { total, weekCount, monthCount, todayCount, streak, topTags, pinnedCount, snoozedCount, last7Days };
+    return { total, weekCount, monthCount, todayCount, streak, topTags, pinnedCount, last7Days };
   });
 </script>
 
@@ -119,7 +118,6 @@
           </div>
           <div>
             <p class="text-sm text-muted-foreground">{stats.pinnedCount} pinned</p>
-            <p class="text-sm text-muted-foreground">{stats.snoozedCount} reminders</p>
           </div>
         </div>
       </div>

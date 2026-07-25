@@ -1,10 +1,9 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { notesStore, togglePin, snoozeNote, unsnoozeNote, deleteNote } from '$lib/stores/notes';
+  import { notesStore, togglePin, deleteNote } from '$lib/stores/notes';
   import { Button } from "$lib/components/ui/button";
   import NoteDialog from '$lib/components/dialogs/NoteDialog.svelte';
-  import SnoozePicker from '$lib/components/dialogs/SnoozePicker.svelte';
-  import { Lightbulb, Pin, PinOff, Bell, BellOff, Search, X } from '@lucide/svelte';
+  import { Lightbulb, Pin, PinOff, Search, X } from '@lucide/svelte';
   import Icon from '@iconify/svelte';
   import { getTagIcon, getRelativeTime } from '$lib/utils';
   import { noteDialogOpen } from '$lib/stores/ui';
@@ -14,8 +13,6 @@
   let dialogOpen = $state(false);
   let searchQuery = $state('');
   let showPinnedOnly = $state(false);
-  let snoozePickerNoteId: string | null = $state(null);
-
   $effect(() => {
     dialogOpen = $noteDialogOpen;
   });
@@ -58,48 +55,19 @@
         n.tags.some(t => matchesQuery(q, t.toLowerCase()))
       );
     }
-    // Sort: pinned first, non-snoozed before snoozed, then by timestamp descending
+    // Sort: pinned first, then by timestamp descending
     const sorted = [...result].sort((a, b) => {
       if (a.pinned && !b.pinned) return -1;
       if (!a.pinned && b.pinned) return 1;
-      const aHasSnooze = a.snoozedUntil ? 1 : 0;
-      const bHasSnooze = b.snoozedUntil ? 1 : 0;
-      if (aHasSnooze !== bHasSnooze) return aHasSnooze - bHasSnooze;
       return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
     });
     return sorted;
   });
 
-  function handleRemind(noteId: string) {
-    snoozePickerNoteId = noteId;
-  }
-
-  async function onRemindSelect(until: string) {
-    if (snoozePickerNoteId) {
-      await snoozeNote(snoozePickerNoteId, until);
-    }
-    snoozePickerNoteId = null;
-  }
-
   function clearSearch() {
     searchQuery = '';
   }
 
-  const isSnoozeExpired = (note: Note) => {
-    if (!note.snoozedUntil) return false;
-    return new Date(note.snoozedUntil) < new Date();
-  };
-
-  const formatSnooze = (iso: string): string => {
-    const d = new Date(iso);
-    const now = new Date();
-    const diffMs = d.getTime() - now.getTime();
-    const diffHrs = Math.round(diffMs / (1000 * 60 * 60));
-    if (diffHrs < 0) return 'Overdue';
-    if (diffHrs < 24) return `${diffHrs}h left`;
-    const days = Math.round(diffHrs / 24);
-    return `${days}d left`;
-  };
 </script>
 
 <div class="flex flex-col relative">
@@ -148,9 +116,8 @@
       </div>
     {:else}
       {#each filteredNotes as note (note.id)}
-        {@const expired = isSnoozeExpired(note)}
         <div
-          class="group flex items-start p-4 bg-card rounded-xl border border-border/50 shadow-sm hover:shadow-md transition-all duration-200 hover:border-primary/20 relative {expired ? 'ring-2 ring-amber-500/50' : ''} {note.pinned ? 'border-primary/30' : ''}"
+          class="group flex items-start p-4 bg-card rounded-xl border border-border/50 shadow-sm hover:shadow-md transition-all duration-200 hover:border-primary/20 relative {note.pinned ? 'border-primary/30' : ''}"
           role="button"
           tabindex="0"
           ondblclick={() => togglePin(note.id)}
@@ -159,12 +126,6 @@
             <div class="flex items-center gap-2 mb-1">
               {#if note.pinned}
                 <Pin class="w-3 h-3 text-primary shrink-0" />
-              {/if}
-              {#if note.snoozedUntil}
-                <Bell class="w-3 h-3 shrink-0 {expired ? 'text-amber-500' : 'text-muted-foreground'}" />
-                <span class="text-xs {expired ? 'text-amber-500 font-medium' : 'text-muted-foreground'}">
-                  {formatSnooze(note.snoozedUntil)}
-                </span>
               {/if}
             </div>
             <p class="text-base text-foreground leading-relaxed mb-2 line-clamp-3">{note.content}</p>
@@ -200,33 +161,6 @@
                 <Pin class="w-4 h-4" />
               {/if}
             </Button>
-            <div class="relative">
-              <Button
-                variant="ghost"
-                size="icon"
-                class="h-8 w-8"
-                aria-label={note.snoozedUntil ? 'Remove reminder' : 'Set reminder'}
-                onclick={() => {
-                  if (note.snoozedUntil) {
-                    unsnoozeNote(note.id);
-                  } else {
-                    handleRemind(note.id);
-                  }
-                }}
-              >
-                {#if note.snoozedUntil}
-                  <BellOff class="w-4 h-4" />
-                {:else}
-                  <Bell class="w-4 h-4" />
-                {/if}
-              </Button>
-              {#if snoozePickerNoteId === note.id}
-                <SnoozePicker
-                  onRemind={onRemindSelect}
-                  onClose={() => snoozePickerNoteId = null}
-                />
-              {/if}
-            </div>
           </div>
         </div>
       {/each}
