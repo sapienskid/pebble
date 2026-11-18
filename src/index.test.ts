@@ -2,16 +2,17 @@ import { describe, it, expect, vi } from 'vitest';
 import worker, { type Env } from './index';
 
 describe('Pebble Cloudflare Worker Backend', () => {
+    const store = new Map<string, string>();
     const mockKv = {
-        store: new Map<string, string>(),
+        store,
         async put(key: string, value: string) {
-            this.store.set(key, value);
+            store.set(key, value);
         },
         async get(key: string) {
-            return this.store.get(key) ?? null;
+            return store.get(key) ?? null;
         },
         async list({ prefix }: { prefix: string }) {
-            const keys = Array.from(this.store.keys())
+            const keys = Array.from(store.keys())
                 .filter(k => k.startsWith(prefix))
                 .map(name => ({ name }));
             return { keys, list_complete: true, cursor: '' };
